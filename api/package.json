@@ -1,0 +1,17 @@
+{
+  "name": "shiploud-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "d1:migrate:local": "wrangler d1 migrations apply shiploud-dogfood --local",
+    "d1:migrate:remote": "wrangler d1 migrations apply shiploud-dogfood --remote"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250701.0",
+    "typescript": "~5.8.3",
+    "wrangler": "^3.114.17"
+  }
+}

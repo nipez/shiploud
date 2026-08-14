@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-script: "Caveat", "Patrick Hand", cursive;
+  --color-cream: #FBF6E9;
+  --color-cream-2: #FFFDF7;
+  --color-navy: #2B1B4D;
+  --color-navy-soft: #3D2A66;
+  --color-muted: #6B5B7A;
+  --color-line: #E8DFC8;
+  --color-orange: #FF6A2B;
+  --color-orange-deep: #E04F12;
+  --color-orange-shadow: #C9440A;
+  --color-sticker-yellow: #FFE566;
+  --color-sticker-pink: #FF8FB8;
+  --color-sticker-mint: #7DFFB3;
+  --color-sticker-sky: #7EC8FF;
+  --color-sticker-lilac: #C9A8FF;
+  --color-card: #FFFEFA;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  body {
+    @apply bg-cream text-navy font-sans antialiased;
+    overflow-x: hidden;
+    max-width: 100%;
+    background-color: #FBF6E9;
+    background-image: radial-gradient(circle, rgba(43, 27, 77, 0.09) 1.1px, transparent 1.1px);
+    background-size: 22px 22px;
+    background-attachment: fixed;
+  }
+
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgba(255, 106, 43, 0.35);
+    color: #2B1B4D;
+  }
+
+  textarea, input, select {
+    @apply outline-none;
+  }
+}
+
+@layer components {
+  .btn-pill {
+    @apply relative inline-flex items-center justify-center rounded-full font-extrabold text-white transition;
+    background: #FF6A2B;
+    box-shadow: 0 4px 0 #C9440A;
+  }
+  .btn-pill:hover {
+    background: #ff7a42;
+    transform: translateY(1px);
+    box-shadow: 0 3px 0 #C9440A;
+  }
+  .btn-pill:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #C9440A;
+  }
+  .btn-pill:focus-visible {
+    outline: 2px solid #2B1B4D;
+    outline-offset: 3px;
+  }
+  .btn-pill:disabled {
+    opacity: 0.5;
+    transform: none;
+    box-shadow: 0 4px 0 #C9440A;
+  }
+
+  .card-soft {
+    @apply rounded-[28px] bg-card border border-line;
+    box-shadow: 0 10px 30px rgba(43, 27, 77, 0.08), 0 2px 6px rgba(43, 27, 77, 0.04);
+  }
+
+  .sticker {
+    @apply inline-flex items-center justify-center rounded-full font-extrabold text-navy;
+    border: 3px solid #2B1B4D;
+    box-shadow:
+      0 0 0 3px #fff,
+      0 6px 14px rgba(43, 27, 77, 0.14);
+    white-space: nowrap;
+  }
+
+  /* Hand-placed tape/doodle label — distinct from pill .sticker badges */
+  .sticker-hand {
+    @apply relative inline-flex items-center justify-center font-script text-navy;
+    border-radius: 14px;
+    border: 3.5px solid #2B1B4D;
+    padding: 0.375rem 0.75rem; /* py-1.5 px-3 */
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    box-shadow:
+      0 0 0 3px #fff,
+      0 7px 16px rgba(43, 27, 77, 0.16);
+  }
+  .sticker-hand::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 18%;
+    width: 38%;
+    height: 9px;
+    background: rgba(255, 253, 247, 0.72);
+    border: 1.5px solid rgba(43, 27, 77, 0.22);
+    border-radius: 2px;
+    transform: rotate(-2deg);
+    box-shadow: 0 1px 2px rgba(43, 27, 77, 0.08);
+    pointer-events: none;
+  }
+
+  .input-soft {
+    @apply rounded-xl border border-line bg-cream-2 px-3 py-3 text-navy placeholder:text-muted/60;
+  }
+  .input-soft:focus {
+    border-color: rgba(255, 106, 43, 0.55);
+    box-shadow: 0 0 0 3px rgba(255, 106, 43, 0.12);
+  }
+}
+
+@layer utilities {
+  .font-script {
+    font-family: var(--font-script);
+  }
+}

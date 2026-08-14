@@ -1,0 +1,20 @@
+name = "shiploud-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+account_id = "af7d11f04c2cb5763fd0e928f907f46d"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "shiploud-dogfood"
+database_id = "1ff86af8-5665-4deb-9f7e-b4246b2364c2"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["0 14 * * *"]
+[ai]
+binding = "AI"
+
+# Secrets (wrangler secret put; do not commit values):
+#   X_CLIENT_ID, X_CLIENT_SECRET
+# Optional: X_OAUTH_REDIRECT (defaults to Worker /api/x/oauth/callback)
+# Optional: TOKEN_WRAP_SECRET (AES-GCM wrap for X tokens; plaintext in D1 if unset)
