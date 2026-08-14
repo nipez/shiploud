@@ -5,49 +5,44 @@ type Props = {
 }
 
 export default function XConnectCard({ x }: Props) {
-  const label = !x.configured
-    ? 'X posting not configured'
-    : x.connected && x.handle
-      ? `Connected as @${x.handle}`
-      : x.loading
-        ? 'Checking X…'
-        : 'Connect X'
+  const handle = x.handle ? `@${x.handle.replace(/^@/, '')}` : '@you'
 
   return (
-    <div className="card-soft space-y-3 p-4 sm:p-5">
-      <div className="space-y-1">
-        <h3 className="text-sm font-extrabold text-navy">X posting</h3>
-        <p className="text-sm text-muted">
-          Posts from your account. Radar still uses public posts.
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {x.connected && x.configured ? (
-          <>
-            <span className="rounded-full border border-orange/30 bg-orange/10 px-3 py-2 text-sm font-extrabold text-navy">
-              {label}
-            </span>
-            <button
-              type="button"
-              onClick={() => void x.disconnect()}
-              className="min-h-11 rounded-full border border-line bg-card px-4 text-sm font-extrabold text-navy hover:border-orange/40"
-            >
-              Disconnect
-            </button>
-          </>
-        ) : (
+    <div className="card-soft rounded-3xl px-[22px] py-5">
+      <p className="mb-2.5 text-[11px] font-black tracking-[0.08em] text-muted">X POSTING</p>
+      {x.connected && x.configured ? (
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-sticker-mint bg-sticker-mint/25 px-4 py-[7px] text-[12.5px] font-black">
+            ✓ Connected as {handle}
+          </span>
+          <button
+            type="button"
+            onClick={() => void x.disconnect()}
+            className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-2 text-[12.5px] font-extrabold text-navy hover:border-orange-deep hover:text-orange-deep"
+          >
+            Disconnect
+          </button>
+          <span className="text-xs font-bold text-muted">
+            Posts originals from your account. Radar still uses public posts.
+          </span>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             onClick={() => void x.connect()}
             disabled={!x.configured || x.loading}
-            className="btn-pill min-h-11 px-5 py-2.5 text-sm disabled:opacity-50"
+            className="btn-pill whitespace-nowrap px-[18px] py-[9px] text-[12.5px] disabled:opacity-50"
             title={!x.configured ? 'X posting not configured' : undefined}
           >
-            {label}
+            {x.loading ? 'Checking X…' : !x.configured ? 'X posting not configured' : 'Connect X'}
           </button>
-        )}
-      </div>
-      {x.error && <p className="text-sm font-extrabold text-red-600">{x.error}</p>}
+          <span className="text-xs font-bold text-muted">
+            OAuth, official API, originals only. Copy always works without it.
+          </span>
+        </div>
+      )}
+      {x.error && <p className="mt-2 text-sm font-extrabold text-red-600">{x.error}</p>}
     </div>
   )
 }

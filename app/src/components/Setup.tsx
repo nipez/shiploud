@@ -12,8 +12,8 @@ import { newEmptyProject } from '../storage'
 import { refreshXStats } from '../api'
 import { track } from '../track'
 import BuilderSuggestions from './BuilderSuggestions'
-import BuilderTagPicker from './BuilderTagPicker'
 import XConnectCard from './XConnectCard'
+import { ScreenHead } from './ScreenHead'
 import type { XConnectionState } from '../useXConnection'
 
 type Props = {
@@ -21,9 +21,10 @@ type Props = {
   onSave: (setup: SetupType) => void
   onBack: () => void
   xConnection: XConnectionState
+  onSetActiveProject?: (projectId: string) => void
 }
 
-export default function Setup({ setup, onSave, onBack, xConnection }: Props) {
+export default function Setup({ setup, onSave, onBack, xConnection, onSetActiveProject }: Props) {
   const [projects, setProjects] = useState<Project[]>(setup.projects)
   const [activeProjectId, setActiveProjectId] = useState(setup.activeProjectId)
   const [newFav, setNewFav] = useState('')
@@ -48,6 +49,7 @@ export default function Setup({ setup, onSave, onBack, xConnection }: Props) {
 
   function selectProject(id: string) {
     setActiveProjectId(id)
+    onSetActiveProject?.(id)
   }
 
   function handleSave() {
@@ -170,218 +172,177 @@ export default function Setup({ setup, onSave, onBack, xConnection }: Props) {
 
 
   return (
-    <section className="space-y-6">
-      <header className="space-y-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3 text-sm font-extrabold text-muted hover:border-orange/40 hover:text-navy"
-        >
-          ← Back
-        </button>
-        <h2 className="text-xl font-extrabold tracking-tight text-navy sm:text-2xl">
-          Your setup
-        </h2>
-        <p className="text-sm text-muted">
-          Each project has its own building, URL, audience, goal, voice, and favorite builders.
-        </p>
-      </header>
+    <section>
+      <ScreenHead
+        eyebrow="tell it the project once →"
+        title="Your setup"
+        sub="Each project has its own building, audience, goal, voice, and favorite builders. Drafts borrow all of it."
+      />
 
-      <XConnectCard x={xConnection} />
+      <div className="flex max-w-[760px] flex-col gap-4">
+        <XConnectCard x={xConnection} />
 
-      <div className="card-soft space-y-3 p-4 sm:p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="text-sm font-extrabold text-navy">Projects</h3>
-          <span className="text-xs text-muted">Tap one to edit · active tags Journal</span>
-        </div>
-        <ul className="space-y-2">
-          {projects.map((p) => {
-            const selected = active?.id === p.id
-            return (
-              <li key={p.id}>
+        <div className="card-soft rounded-3xl px-[22px] py-5">
+          <p className="mb-2.5 text-[11px] font-black tracking-[0.08em] text-muted">PROJECTS</p>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {projects.map((p) => {
+              const selected = active?.id === p.id
+              return (
                 <button
+                  key={p.id}
                   type="button"
                   onClick={() => selectProject(p.id)}
-                  className={`flex w-full flex-wrap items-center gap-2 rounded-2xl border px-3 py-2.5 text-left transition ${
+                  className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] px-4 py-[7px] text-[12.5px] font-black ${
                     selected
-                      ? 'border-orange/50 bg-orange/10 shadow-sm'
-                      : 'border-line bg-cream-2/80 hover:border-orange/35'
+                      ? 'border-orange bg-orange/10 text-navy'
+                      : 'border-line bg-cream-2 text-navy hover:border-navy'
                   }`}
                 >
-                  <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                      selected
-                        ? 'border-orange bg-orange text-[10px] text-white'
-                        : 'border-line bg-card'
-                    }`}
-                    aria-hidden
-                  >
-                    {selected ? '✓' : ''}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-extrabold text-navy">
-                    {p.name.trim() || 'Untitled'}
-                  </span>
+                  {p.name.trim() || 'Untitled'}
                   {selected && (
-                    <span className="rounded-full bg-orange px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
-                      Active
+                    <span className="rounded-full bg-orange px-2 py-px text-[9.5px] font-black tracking-[0.06em] text-white">
+                      ACTIVE
                     </span>
                   )}
                 </button>
-              </li>
-            )
-          })}
-        </ul>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={addProject}
-            className="min-h-11 rounded-full border border-line bg-card px-4 text-sm font-extrabold text-navy hover:border-orange/40"
-          >
-            + Add project
-          </button>
-          {active && (
+              )
+            })}
             <button
               type="button"
-              onClick={() => removeProject(active.id)}
-              className="min-h-11 rounded-full px-3 text-xs font-extrabold text-muted hover:text-red-600 disabled:opacity-40"
-              disabled={projects.length <= 1}
+              onClick={addProject}
+              className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-dashed border-line bg-cream-2 px-4 py-2 text-[12.5px] font-extrabold text-navy hover:border-navy"
             >
-              Remove project
+              + Add project
             </button>
-          )}
-        </div>
-      </div>
-
-      {active && (
-        <div className="card-soft space-y-4 p-4 sm:p-5">
-          <div className="space-y-1">
-            <p className="text-[11px] font-black uppercase tracking-wide text-orange">
-              Editing · {projectLabel}
-            </p>
-            <p className="text-sm text-muted">
-              These fields belong only to this project — switch projects above to edit another.
-            </p>
-          </div>
-
-          <Field label={`${projectLabel} — name`}>
-            <input
-              value={active.name}
-              onChange={(e) => patchActive({ name: e.target.value })}
-              className="input-soft min-h-11 w-full text-base sm:text-sm"
-              placeholder="ShipLoud"
-            />
-          </Field>
-          <Field label={`${projectLabel} — what you're building`} hint="1–3 sentences.">
-            <textarea
-              value={active.building}
-              onChange={(e) => patchActive({ building: e.target.value })}
-              rows={3}
-              className="input-soft w-full resize-y text-base leading-relaxed sm:text-sm"
-              placeholder="grow X by turning ship notes into posts…"
-            />
-          </Field>
-          <Field label="URL" hint="Product or landing link">
-            <input
-              value={active.url ?? ''}
-              onChange={(e) => patchActive({ url: e.target.value })}
-              className="input-soft min-h-11 w-full font-mono text-base sm:text-sm"
-              placeholder="https://www.getshiploud.com"
-              inputMode="url"
-              autoComplete="url"
-            />
-          </Field>
-          <Field
-            label="X handle"
-            hint="Public profile · follower tracking"
-          >
-            <div className="flex flex-wrap gap-2">
-              <input
-                value={active.xHandle ?? ''}
-                onChange={(e) => patchActive({ xHandle: e.target.value })}
-                className="input-soft min-h-11 min-w-[10rem] flex-1 font-mono text-base sm:text-sm"
-                placeholder="@dreamandbuildit"
-                autoComplete="off"
-                spellCheck={false}
-              />
+            {active && (
               <button
                 type="button"
-                onClick={() => void checkXNow()}
-                disabled={checking}
-                className="min-h-11 rounded-full border border-line bg-card px-4 text-sm font-extrabold text-navy hover:border-orange/40 disabled:opacity-50"
+                onClick={() => removeProject(active.id)}
+                className="text-xs font-extrabold text-muted hover:text-red-600 disabled:opacity-40"
+                disabled={projects.length <= 1}
               >
-                {checking ? 'Checking…' : 'Check now'}
+                Remove
               </button>
-            </div>
-            <p className="mt-1 text-xs font-semibold text-muted">
-              From your public X profile. Not impressions/engagement.
-            </p>
-            {checkMsg && (
-              <p className="mt-1 text-sm font-extrabold text-orange">{checkMsg}</p>
             )}
-          </Field>
-          <Field label={`${projectLabel} — who it's for`}>
-            <input
-              value={active.who}
-              onChange={(e) => patchActive({ who: e.target.value })}
-              className="input-soft min-h-11 w-full text-base sm:text-sm"
-              placeholder="indie builders on X"
-            />
-          </Field>
-          <Field label={`${projectLabel} — goal`}>
-            <input
-              value={active.goal}
-              onChange={(e) => patchActive({ goal: e.target.value })}
-              className="input-soft min-h-11 w-full text-base sm:text-sm"
-              placeholder="$10K MRR and beyond"
-            />
-          </Field>
-          <Field label={`${projectLabel} — voice`}>
-            <input
-              value={active.voice}
-              onChange={(e) => patchActive({ voice: e.target.value })}
-              className="input-soft min-h-11 w-full text-base sm:text-sm"
-              placeholder="short lines, numbers, no guru speak"
-            />
-          </Field>
+          </div>
+        </div>
 
-          <div className="space-y-3 border-t border-line pt-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-sm font-extrabold text-navy">
-                {projectLabel} — favorite builders
-              </h3>
-              <span className="text-xs text-muted">X handles · reply radar</span>
+        {active && (
+          <div className="card-soft rounded-3xl px-[22px] py-5">
+            <p className="mb-3.5 text-[11px] font-black tracking-[0.08em] text-orange">
+              EDITING · {projectLabel.toUpperCase()}
+            </p>
+            <div className="mb-3.5 grid gap-3.5 sm:grid-cols-2">
+              <Field label="Name">
+                <input
+                  value={active.name}
+                  onChange={(e) => patchActive({ name: e.target.value })}
+                  className="input-soft min-h-11 w-full text-[13px] font-bold"
+                  placeholder="ShipLoud"
+                />
+              </Field>
+              <Field label="URL">
+                <input
+                  value={active.url ?? ''}
+                  onChange={(e) => patchActive({ url: e.target.value })}
+                  className="input-soft min-h-11 w-full font-mono text-[13px] font-bold"
+                  placeholder="https://www.getshiploud.com"
+                  inputMode="url"
+                  autoComplete="url"
+                />
+              </Field>
+              <Field label="X handle">
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    value={active.xHandle ?? ''}
+                    onChange={(e) => patchActive({ xHandle: e.target.value })}
+                    className="input-soft min-h-11 min-w-[10rem] flex-1 font-mono text-[13px] font-bold"
+                    placeholder="@dreamandbuildit"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void checkXNow()}
+                    disabled={checking}
+                    className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 text-[12.5px] font-extrabold text-navy hover:border-navy disabled:opacity-50"
+                  >
+                    {checking ? 'Checking…' : 'Check now'}
+                  </button>
+                </div>
+                {checkMsg && <p className="mt-1 text-sm font-extrabold text-orange">{checkMsg}</p>}
+              </Field>
+              <Field label="Who it's for">
+                <input
+                  value={active.who}
+                  onChange={(e) => patchActive({ who: e.target.value })}
+                  className="input-soft min-h-11 w-full text-[13px] font-bold"
+                  placeholder="indie builders on X"
+                />
+              </Field>
+              <Field label="Goal">
+                <input
+                  value={active.goal}
+                  onChange={(e) => patchActive({ goal: e.target.value })}
+                  className="input-soft min-h-11 w-full text-[13px] font-bold"
+                  placeholder="$10K MRR and beyond"
+                />
+              </Field>
+              <Field label="Voice">
+                <input
+                  value={active.voice}
+                  onChange={(e) => patchActive({ voice: e.target.value })}
+                  className="input-soft min-h-11 w-full text-[13px] font-bold"
+                  placeholder="short lines, numbers, no guru speak"
+                />
+              </Field>
             </div>
-            <ul className="space-y-2">
+            <Field label="What you're building" hint="1–3 sentences">
+              <textarea
+                value={active.building}
+                onChange={(e) => patchActive({ building: e.target.value })}
+                rows={2}
+                className="input-soft w-full resize-y text-[13px] font-bold leading-normal"
+                placeholder="grow X by turning ship notes into posts…"
+              />
+            </Field>
+          </div>
+        )}
+
+        {active && (
+          <div className="card-soft rounded-3xl px-[22px] py-5">
+            <div className="mb-3 flex flex-wrap items-baseline gap-2">
+              <p className="text-[11px] font-black tracking-[0.08em] text-muted">FAVORITE BUILDERS</p>
+              <span className="text-[11.5px] font-bold text-muted">· these handles feed your radar</span>
+            </div>
+            <div className="mb-3 flex flex-col gap-2">
               {active.favoriteBuilders.length === 0 && (
-                <li className="text-xs font-semibold text-muted">None yet — add handles below.</li>
+                <p className="text-xs font-semibold text-muted">None yet — add handles below.</p>
               )}
               {active.favoriteBuilders.map((h, i) => {
                 const display = normalizeHandle(h) || h
+                const tags = tagsForHandle(active.builderTags, display)
                 return (
-                  <li
+                  <div
                     key={`${display}-${i}`}
-                    className="rounded-2xl border border-line bg-cream-2 px-3 py-2.5"
+                    className="flex items-center gap-2.5 rounded-[14px] border border-line bg-cream-2 px-3.5 py-[9px]"
                   >
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="font-mono text-sm font-extrabold text-navy">{display}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeFavorite(display)}
-                        className="text-muted hover:text-red-600"
-                        aria-label={`Remove ${display}`}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <BuilderTagPicker
-                      selected={tagsForHandle(active.builderTags, display)}
-                      extraTags={usedBuilderTags(active.builderTags, active.favoriteBuilders)}
-                      onChange={(tags) => setFavoriteTags(display, tags)}
-                    />
-                  </li>
+                    <span className="text-[13px] font-black text-navy">{display}</span>
+                    <span className="min-w-0 flex-1 truncate text-[11.5px] font-bold text-muted">
+                      {tags.join(' · ') || 'uncategorized'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFavorite(display)}
+                      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-line text-xs font-black leading-none text-muted hover:bg-orange hover:text-white"
+                      aria-label={`Remove ${display}`}
+                    >
+                      ×
+                    </button>
+                  </div>
                 )
               })}
-            </ul>
+            </div>
             <div className="flex flex-wrap gap-2">
               <input
                 value={newFav}
@@ -392,39 +353,41 @@ export default function Setup({ setup, onSave, onBack, xConnection }: Props) {
                     addFavorite()
                   }
                 }}
-                className="input-soft min-h-11 min-w-[10rem] flex-1 font-mono text-sm"
-                placeholder="@marclou"
+                className="input-soft w-40 rounded-full px-4 py-[9px] font-mono text-[12.5px] font-bold"
+                placeholder="@handle"
               />
               <button
                 type="button"
                 onClick={() => addFavorite()}
-                className="min-h-11 rounded-full border border-line bg-card px-4 text-sm font-extrabold text-navy hover:border-orange/40"
+                className="btn-pill whitespace-nowrap px-[18px] py-[9px] text-[12.5px]"
               >
                 Add
               </button>
             </div>
-            <BuilderSuggestions
-              favoriteBuilders={active.favoriteBuilders}
-              builderTags={active.builderTags}
-              onAdd={(handle) => addFavorite(handle)}
-              onSetTags={setFavoriteTags}
-            />
+            <div className="mt-4">
+              <BuilderSuggestions
+                favoriteBuilders={active.favoriteBuilders}
+                builderTags={active.builderTags}
+                onAdd={(handle) => addFavorite(handle)}
+                onSetTags={setFavoriteTags}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={handleSave} className="btn-pill min-h-11 px-6 py-2.5 text-sm">
-          Save setup
-        </button>
-        <button
-          type="button"
-          onClick={onBack}
-          className="min-h-11 rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40"
-        >
-          Done
-        </button>
-        {savedFlash && <p className="text-sm font-extrabold text-orange">Saved.</p>}
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button" onClick={handleSave} className="btn-pill whitespace-nowrap px-6 py-2.5 text-sm">
+            Save setup
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-2.5 text-sm font-extrabold text-navy hover:border-navy"
+          >
+            Done
+          </button>
+          {savedFlash && <p className="text-sm font-extrabold text-orange">Saved.</p>}
+        </div>
       </div>
     </section>
   )

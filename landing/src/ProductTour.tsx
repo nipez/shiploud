@@ -47,7 +47,7 @@ function TodayMini() {
           <div className="tour-field-label">
             <span>Numbers</span>
           </div>
-          <div className="tour-field-value">~8 followers · $0 MRR · 1 product shipped</div>
+          <div className="tour-field-value">~9 followers · $0 MRR · 1 product shipped</div>
         </div>
 
         <div className="tour-field">
@@ -87,7 +87,7 @@ function DraftsMini() {
             Same afternoon.
             <br />
             <br />
-            Followers: still ~8
+            Followers: still ~9
             <br />
             MRR: $0
             <br />
@@ -142,7 +142,7 @@ function RadarMini() {
           <div className="tour-reply-box">
             <p className="tour-reply-label">Suggested reply</p>
             <p className="tour-reply-text">
-              This. Landing live same afternoon. Followers still ~8, MRR $0, products
+              This. Landing live same afternoon. Followers still ~9, MRR $0, products
               shipped: 1. North star is shipped products — building ShipLoud so the
               posts match the shipping.
             </p>

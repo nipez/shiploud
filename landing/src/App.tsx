@@ -1,579 +1,439 @@
 import WaitlistForm from './WaitlistForm'
-import ProductTour from './ProductTour'
 
-const features = [
-  {
-    title: 'Voice drafts',
-    body: 'Hooks, short lines, hard numbers. Marc Lou energy — not LinkedIn soup. Every draft sounds like you shipped something.',
-    emoji: '🎙️',
-    tint: 'bg-sticker-yellow',
-  },
-  {
-    title: 'Ship journal → posts',
-    body: 'Daily “what to ship/post today” prompts pulled from your actual build progress. No blank cursor. No guru threads.',
-    emoji: '📓',
-    tint: 'bg-sticker-mint',
-  },
-  {
-    title: 'Reply radar',
-    body: 'Who to engage today — accounts in your niche posting questions you can answer with receipts, not platitudes.',
-    emoji: '📡',
-    tint: 'bg-sticker-sky',
-  },
-  {
-    title: 'Approval queue',
-    body: 'Nothing goes out until you say so. Review, tweak, copy to X. Native posting lands later — control first.',
-    emoji: '✅',
-    tint: 'bg-sticker-pink',
-  },
-]
-
-const steps = [
-  {
-    n: '1',
-    title: 'Connect your goal',
-    body: 'Tell ShipLoud what you’re building, who it’s for, and the MRR / launch target you’re chasing.',
-  },
-  {
-    n: '2',
-    title: 'Get daily drafts',
-    body: 'Wake up to ship-log posts, reply targets, and a one-line prompt: what to ship or post today.',
-  },
-  {
-    n: '3',
-    title: 'Approve & post',
-    body: 'Tweak in the queue, hit copy, paste into X. Loud, concrete, zero auto-spam.',
-  },
-]
-
-const habitLoop = [
-  {
-    n: '1',
-    title: 'Journal the ship',
-    body: 'Log what you actually built today — not what you meant to tweet.',
-  },
-  {
-    n: '2',
-    title: 'Short options',
-    body: 'A few drafts in your voice. Hooks and numbers — not webinar copy.',
-  },
-  {
-    n: '3',
-    title: 'Pick, copy, paste',
-    body: 'Approve one. Copy it. Paste to X. Nothing goes out without you.',
-  },
-  {
-    n: '4',
-    title: 'Reply radar',
-    body: 'Engage favorite builders already talking — not only broadcasting.',
-  },
-  {
-    n: '5',
-    title: 'Weekly receipts',
-    body: 'Posts shipped + follower snapshots. See if the habit is working.',
-  },
-]
-
-const stickers = [
-  { label: 'Ship log', color: 'bg-sticker-yellow', rotate: '-rotate-6', top: 'top-6', left: 'left-3' },
-  { label: 'Reply radar', color: 'bg-sticker-sky', rotate: 'rotate-6', top: 'top-16', right: 'right-4' },
-  { label: '$10K MRR', color: 'bg-sticker-mint', rotate: 'rotate-3', top: 'top-[46%]', left: 'left-2' },
-  { label: 'Day 1', color: 'bg-sticker-pink', rotate: '-rotate-3', top: 'top-[56%]', right: 'right-3' },
-  { label: 'Approve first', color: 'bg-sticker-lilac', rotate: 'rotate-8', bottom: 'bottom-8', left: 'left-3' },
-  { label: 'Copy → X', color: 'bg-sticker-yellow', rotate: '-rotate-8', bottom: 'bottom-16', right: 'right-4' },
-]
-
-function Sticker({
-  label,
-  color,
-  rotate = '',
-  className = '',
-}: {
-  label: string
-  color: string
-  rotate?: string
-  className?: string
-}) {
+function SmileMark({ size = 20 }: { size?: number }) {
   return (
-    <span className={`sticker ${color} ${rotate} px-3.5 py-1.5 text-sm sm:text-base ${className}`}>
-      {label}
-    </span>
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden>
+      <circle cx="6.5" cy="7.5" r="1.6" fill="#fff" />
+      <circle cx="13.5" cy="7.5" r="1.6" fill="#fff" />
+      <path
+        d="M5.5 12c1.2 1.7 3 2.6 4.5 2.6s3.3-.9 4.5-2.6"
+        stroke="#fff"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 
-function Logo({ className = '' }: { className?: string }) {
+function Logo() {
   return (
-    <a href="#top" className={`inline-flex items-center gap-2.5 font-black tracking-tight text-navy ${className}`}>
-      <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-orange shadow-[0_3px_0_#C9440A]" aria-hidden>
-        <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-          <circle cx="11" cy="13" r="2.4" fill="#fff" />
-          <circle cx="21" cy="13" r="2.4" fill="#fff" />
-          <path d="M10 20c2.2 2.4 9.8 2.4 12 0" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
-        </svg>
+    <a href="#top" className="flex items-center gap-2.5 no-underline">
+      <span className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-[11px] bg-orange shadow-[0_3px_0_#C9440A]">
+        <SmileMark />
       </span>
-      <span>
-        Ship<span className="text-orange">Loud</span>
+      <span className="text-[19px] font-black tracking-[-0.01em]">
+        <span className="text-navy">Ship</span>
+        <span className="text-orange">Loud</span>
       </span>
     </a>
   )
 }
 
-function ExampleDraft() {
+function WindowDots() {
   return (
-    <div className="relative mx-auto w-full max-w-sm px-5 pb-8 pt-6 sm:px-8">
-      <Sticker label="Day 14" color="bg-sticker-yellow" rotate="-rotate-6" className="absolute left-1 top-1 z-20 !text-xs sm:left-2 sm:!text-sm" />
-      <Sticker label="Copy → X" color="bg-sticker-mint" rotate="rotate-6" className="absolute right-0 top-1 z-20 hidden !text-xs sm:inline-flex sm:right-1 sm:!text-sm" />
-      <Sticker label="Approve first" color="bg-sticker-pink" rotate="-rotate-3" className="absolute bottom-1 left-1/2 z-20 -translate-x-1/2 !text-xs sm:!text-sm" />
-
-      <article className="card-soft relative overflow-hidden border-2 border-navy/10 bg-white">
-        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-orange font-black text-white shadow-[0_3px_0_#C9440A]">
-            SL
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <p className="truncate font-extrabold text-navy">you · building in public</p>
-              <span className="text-orange text-xs">✓</span>
-            </div>
-            <p className="text-sm font-semibold text-muted">@you · just now</p>
-          </div>
-          <span className="sticker bg-sticker-lilac !px-2.5 !py-0.5 !text-[10px] !shadow-none rotate-3">
-            draft
-          </span>
-        </div>
-        <div className="space-y-3 px-4 py-4 font-bold leading-relaxed text-navy">
-          <p>Day 14 of building ShipLoud.</p>
-          <p>
-            Waitlist: <span className="text-orange">847 → 1,204</span> (+42%)
-            <br />
-            Code shipped: approval queue + reply radar
-            <br />
-            Revenue: still $0. That’s fine.
-          </p>
-          <p>
-            Indie hackers don’t need another “how to grow on X” thread.
-            <br />
-            They need drafts that sound like they actually shipped.
-          </p>
-          <p className="text-muted font-semibold">What’s one thing you shipped this week?</p>
-        </div>
-        <div className="flex items-center justify-between border-t border-line px-4 py-3 text-sm font-bold text-muted">
-          <span>♡ 24</span>
-          <span>↻ 7</span>
-          <span>💬 11</span>
-          <span className="rounded-full bg-orange/10 px-2.5 py-0.5 text-xs font-extrabold text-orange">copy → X</span>
-        </div>
-      </article>
-    </div>
+    <span className="flex gap-[5px]">
+      <span className="h-[9px] w-[9px] rounded-full bg-sticker-pink" />
+      <span className="h-[9px] w-[9px] rounded-full bg-sticker-yellow" />
+      <span className="h-[9px] w-[9px] rounded-full bg-sticker-mint" />
+    </span>
   )
 }
 
-function PhoneMock() {
-  return (
-    <div className="relative mx-auto w-[248px] sm:w-[272px]">
-      <div className="absolute left-1/2 top-0 z-30 -translate-x-1/2 -translate-y-[72%] sm:left-0 sm:translate-x-0 sm:-translate-y-[60%] sm:-left-6">
-        <span className="sticker bg-sticker-yellow -rotate-6 !px-2.5 !py-1 !text-[11px] sm:!text-xs">
-          today’s journal → draft
-        </span>
-      </div>
-      <div className="absolute -right-16 top-28 z-20 hidden md:block">
-        <Sticker label="Reply radar" color="bg-sticker-sky" rotate="rotate-8" />
-      </div>
-      <div className="absolute -left-14 bottom-24 z-20 hidden md:block">
-        <Sticker label="$10K MRR" color="bg-sticker-mint" rotate="rotate-3" />
-      </div>
-      <div className="absolute -right-14 bottom-6 z-20 hidden lg:block">
-        <Sticker label="Founding $19" color="bg-sticker-pink" rotate="-rotate-6" />
-      </div>
-
-      {/* High-fidelity iPhone 15/16-style frame (pure CSS) */}
-      <div className="iphone-stage relative mx-auto">
-        <div className="iphone-shadow" aria-hidden />
-
-        <div className="iphone-device" aria-label="ShipLoud app on iPhone">
-          <span className="iphone-btn iphone-btn-silent" aria-hidden />
-          <span className="iphone-btn iphone-btn-vol-up" aria-hidden />
-          <span className="iphone-btn iphone-btn-vol-down" aria-hidden />
-          <span className="iphone-btn iphone-btn-power" aria-hidden />
-
-          <div className="iphone-frame">
-            <div className="iphone-bezel">
-              <div className="iphone-screen">
-                <div className="iphone-island" aria-hidden>
-                  <span className="iphone-island-camera" />
-                </div>
-
-                <div className="iphone-status">
-                  <span className="iphone-time">9:41</span>
-                  <div className="iphone-status-spacer" aria-hidden />
-                  <div className="iphone-status-right" aria-hidden>
-                    <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
-                      <rect x="0.5" y="3.5" width="3" height="8" rx="0.6" fill="#2B1B4D" />
-                      <rect x="4.5" y="2" width="3" height="9.5" rx="0.6" fill="#2B1B4D" />
-                      <rect x="8.5" y="0.5" width="3" height="11" rx="0.6" fill="#2B1B4D" />
-                      <rect x="12.5" y="0.5" width="3" height="11" rx="0.6" fill="#2B1B4D" opacity="0.28" />
-                    </svg>
-                    <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
-                      <path
-                        d="M8 2.2c2.2 0 4.1 0.9 5.5 2.3l-1.1 1.1A6.1 6.1 0 0 0 8 3.8c-1.7 0-3.2.7-4.3 1.8L2.6 4.5A7.7 7.7 0 0 1 8 2.2Zm0 3.1c1.3 0 2.5.5 3.4 1.4L10.3 7.8A3.3 3.3 0 0 0 8 6.8c-.9 0-1.7.3-2.3.9L4.6 6.7A4.7 4.7 0 0 1 8 5.3Zm0 3.2c.6 0 1.1.2 1.5.6L8 10.6 6.5 9.1c.4-.4.9-.6 1.5-.6Z"
-                        fill="#2B1B4D"
-                      />
-                    </svg>
-                    <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
-                      <rect x="0.5" y="1" width="21" height="10" rx="2.2" stroke="#2B1B4D" strokeWidth="1.2" />
-                      <rect x="2" y="2.6" width="16.2" height="6.8" rx="1.2" fill="#2B1B4D" />
-                      <path d="M23 4.2v3.6c.9-.5.9-3.1 0-3.6Z" fill="#2B1B4D" />
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="iphone-app">
-                  <p className="font-script text-[17px] leading-none text-orange">ship notes → X</p>
-                  <h3 className="mt-1.5 text-[1.15rem] font-black leading-tight text-navy">
-                    Draft ready. <span className="text-orange">Approve?</span>
-                  </h3>
-                  <div className="mt-3 space-y-2">
-                    <div className="rounded-2xl border-2 border-dashed border-navy/15 bg-white/85 p-2.5 shadow-sm">
-                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">
-                        📓 Journal note
-                      </p>
-                      <p className="mt-1 text-[13px] font-bold leading-snug text-navy">
-                        Day 14 · waitlist 847→1204. Shipped reply radar.
-                      </p>
-                    </div>
-                    <div className="flex justify-center" aria-hidden>
-                      <span className="text-[11px] font-extrabold text-orange">↓ becomes</span>
-                    </div>
-                    <div className="rounded-2xl border-2 border-navy/10 bg-white p-2.5 shadow-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">𝕏 Draft</p>
-                        <span className="sticker bg-sticker-lilac !px-2 !py-0.5 !text-[9px] !shadow-none rotate-3">
-                          ready
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[13px] font-bold leading-snug text-navy">
-                        Day 14 of building in public.
-                        <br />
-                        Waitlist <span className="text-orange">+42%</span>. Shipped reply radar.
-                      </p>
-                    </div>
-                    <button className="btn-pill mt-0.5 w-full px-4 py-2.5 text-sm" type="button" tabIndex={-1}>
-                      Copy → X
-                    </button>
-                  </div>
-                </div>
-
-                <div className="iphone-home" aria-hidden />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+const DARK_PANEL =
+  'flex flex-1 flex-col gap-[9px] rounded-2xl border border-white/[0.06] p-4 text-[#FFF8EF] [background:radial-gradient(120%_80%_at_50%_0%,#2A2438_0%,#15121F_55%,#0E0C14_100%)]'
 
 export default function App() {
   return (
-    <div id="top" className="min-h-screen overflow-x-hidden">
-      {/* Nav */}
-      <header className="sticky top-0 z-50 border-b border-navy/5 bg-cream/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Logo className="text-lg" />
-          <nav className="hidden items-center gap-6 text-sm font-bold text-navy/80 md:flex">
-            <a href="#problem" className="hover:text-orange transition">The problem</a>
-            <a href="#habit" className="hidden hover:text-orange transition lg:inline">The habit</a>
-            <a href="#how" className="hover:text-orange transition">How it works</a>
-            <a href="#tour" className="hover:text-orange transition">Inside</a>
-            <a href="#features" className="hover:text-orange transition">Features</a>
-            <a href="#pricing" className="hover:text-orange transition">Pricing</a>
-          </nav>
-          <a href="#join" className="btn-pill px-4 py-2 text-sm">
+    <div id="top" className="min-h-dvh">
+      <nav className="sticky top-0 z-50 border-b border-line bg-[rgba(251,246,233,.92)] backdrop-blur">
+        <div className="mx-auto flex max-w-[1160px] items-center gap-6 px-6 py-3">
+          <Logo />
+          <div className="ml-3 hidden flex-1 items-center gap-[22px] md:flex">
+            {[
+              ['#gap', 'The gap'],
+              ['#how', 'How it works'],
+              ['#inside', 'Inside'],
+              ['#pricing', 'Pricing'],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="whitespace-nowrap text-[13.5px] font-extrabold text-navy no-underline hover:text-orange"
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+          <a href="#pricing" className="btn-pill ml-auto whitespace-nowrap px-5 py-2.5 text-[13.5px]">
             Join waitlist
           </a>
         </div>
-      </header>
+      </nav>
 
-      <main>
-        {/* Hero */}
-        <section className="relative px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16">
-          {/* Floating stickers (desktop) */}
-          <div className="pointer-events-none absolute inset-0 hidden xl:block" aria-hidden>
-            {stickers.map((s) => (
-              <span
-                key={s.label}
-                className={`sticker absolute ${s.color} ${s.rotate} ${s.top ?? ''} ${s.bottom ?? ''} ${s.left ?? ''} ${s.right ?? ''} px-3.5 py-1.5 text-sm`}
-              >
-                {s.label}
+      <header className="mx-auto grid max-w-[1160px] items-center gap-8 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:py-[72px]">
+        <div>
+          <p className="mb-2.5 font-script text-[27px] font-bold text-orange">build in public →</p>
+          <h1 className="mb-[18px] text-4xl font-black leading-[1.04] tracking-[-0.02em] text-balance sm:text-[58px]">
+            Turn today's ship notes into <span className="text-orange">X posts people actually follow.</span>
+          </h1>
+          <p className="mb-[26px] max-w-[520px] text-lg font-bold leading-[1.55] text-muted text-pretty">
+            Journal what you built. Pick a short draft that sounds like you. Post to X from the app, or copy. Nothing
+            goes out without your tap.
+          </p>
+          <WaitlistForm id="hero-waitlist" source="marketing-hero" />
+          <p className="mt-3.5 text-[13px] font-bold text-muted">
+            Free in beta · one email when we're live · for founders shipping to{' '}
+            <span className="font-black text-orange">$10K MRR</span> and beyond, not engagement farmers.
+          </p>
+          <div className="mt-[26px] flex flex-wrap items-center gap-2">
+            {['ship journal', '3 short drafts', 'you tap Post', 'replies on X', 'weekly receipts'].map((chip, i) => (
+              <span key={chip} className="inline-flex items-center gap-2">
+                {i > 0 && <span className="text-[13px] font-black text-orange">→</span>}
+                <span className="rounded-full border-[1.5px] border-line bg-cream-2 px-3 py-1 text-xs font-extrabold">
+                  {chip}
+                </span>
               </span>
             ))}
           </div>
+        </div>
 
-          <div className="relative z-10 mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <p className="font-script text-2xl font-semibold text-orange sm:text-3xl">build in public →</p>
-              <h1 className="mt-3 max-w-xl text-4xl font-black tracking-tight text-navy sm:text-5xl sm:leading-[1.08] lg:text-[3.35rem]">
-                Turn today’s ship notes into{' '}
-                <span className="text-orange">X posts people actually follow.</span>
-              </h1>
-              <p className="mt-5 max-w-lg text-lg font-semibold leading-relaxed text-muted sm:text-xl">
-                Journal what you built. Get drafts + reply targets. Approve. Copy to X.
-              </p>
-              <p className="mt-2 max-w-lg text-base font-bold text-navy/75 sm:text-lg">
-                No auto-spam. Built for founders shipping to <span className="text-orange">$10K MRR</span> and beyond.
-              </p>
-              <div className="relative mt-8 max-w-xl">
-                <WaitlistForm id="hero-waitlist" />
-              </div>
-              <p className="mt-4 text-sm font-bold text-navy/70">
-                For founders shipping to <span className="text-orange">$10K MRR</span> and beyond · not engagement farmers
-              </p>
+        <div className="relative min-h-[460px]">
+          <span className="sticker absolute -top-[30px] right-2.5 z-[3] rotate-[5deg] bg-sticker-yellow px-[15px] py-[7px] text-[13.5px]">
+            Approve first
+          </span>
+          <span className="sticker absolute bottom-0.5 -left-1.5 z-[3] -rotate-[7deg] bg-sticker-sky px-[15px] py-[7px] text-[13.5px]">
+            Day 1
+          </span>
+          <span className="sticker absolute -bottom-3.5 right-[22px] z-[3] rotate-[8deg] bg-sticker-mint px-[15px] py-[7px] text-[13.5px]">
+            Zero fluff
+          </span>
 
-              {/* Mobile sticker row */}
-              <div className="mt-8 flex flex-wrap gap-2 xl:hidden">
-                <Sticker label="Ship log" color="bg-sticker-yellow" rotate="-rotate-3" className="!text-xs" />
-                <Sticker label="Reply radar" color="bg-sticker-sky" rotate="rotate-3" className="!text-xs" />
-                <Sticker label="Zero fluff" color="bg-sticker-mint" rotate="-rotate-2" className="!text-xs" />
-                <Sticker label="Founding $19" color="bg-sticker-pink" rotate="rotate-2" className="!text-xs" />
-              </div>
+          <div className="card-soft relative z-[1] max-w-[400px] -rotate-2 rounded-3xl px-[22px] py-5">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10.5px] font-black tracking-[0.09em] text-orange">SHIP JOURNAL · TODAY</span>
+              <span className="text-[11.5px] font-extrabold text-muted">Aug 14</span>
             </div>
-
-            <div className="relative px-2 py-12 sm:py-14">
-              <PhoneMock />
-            </div>
+            <p className="mb-0.5 text-[11px] font-extrabold text-muted">What shipped</p>
+            <p className="mb-2.5 text-sm font-extrabold leading-snug">ShipLoud landing live at getshiploud.com</p>
+            <p className="mb-0.5 text-[11px] font-extrabold text-muted">Numbers</p>
+            <p className="mb-2.5 text-sm font-extrabold leading-snug">~9 followers · $0 MRR · 1 product shipped</p>
+            <p className="mb-0.5 text-[11px] font-extrabold text-muted">Blocker / lesson</p>
+            <p className="text-sm font-extrabold leading-snug">X login blocked. Decision: dogfood before pitch.</p>
           </div>
-        </section>
-
-        {/* Problem */}
-        <section id="problem" className="px-4 py-16 sm:px-6 sm:py-24">
-          <div className="mx-auto max-w-5xl">
-            <p className="font-script text-2xl text-orange">the problem →</p>
-            <h2 className="mt-2 max-w-xl text-3xl font-black tracking-tight text-navy sm:text-4xl sm:max-w-2xl">
-              Bio says build in public. Feed is Cursor questions.
-            </h2>
-
-            <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {[
-                {
-                  emoji: '🛠️',
-                  title: 'You ship… quietly',
-                  body: 'You’re at 0–1K followers. You ask good questions. You reply to every SaaS launch. Your own ship log? Still in Notes.',
-                },
-                {
-                  emoji: '🕳️',
-                  title: 'The feed gap',
-                  body: 'Your timeline is tool replies and “how I grew to 10K” threads you’ll never rewrite in your voice.',
-                },
-                {
-                  emoji: '📣',
-                  title: 'What actually compounds',
-                  body: 'The accounts you admire post boring, concrete updates — numbers, screenshots, “day 12” — and quietly grow.',
-                },
-              ].map((card) => (
-                <article key={card.title} className="card-soft p-6">
-                  <div className="text-3xl" aria-hidden>
-                    {card.emoji}
-                  </div>
-                  <h3 className="mt-3 text-xl font-black text-navy">{card.title}</h3>
-                  <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">{card.body}</p>
-                </article>
-              ))}
-            </div>
-
-            <p className="mt-10 max-w-2xl text-lg font-extrabold text-navy">
-              ShipLoud turns your build progress into posts that sound like you shipped — not like you attended a webinar.
-            </p>
-          </div>
-        </section>
-
-        {/* The habit — why ShipLoud exists */}
-        <section id="habit" className="px-4 py-16 sm:px-6 sm:py-24">
-          <div className="mx-auto max-w-5xl">
-            <p className="font-script text-2xl text-orange">the habit →</p>
-            <h2 className="mt-2 max-w-3xl text-3xl font-black tracking-tight text-navy sm:text-4xl sm:leading-[1.12]">
-              ShipLoud doesn’t buy reach.
-              <span className="mt-2 block">
-                It makes the posting habit that actually gets founders noticed.
+          <p className="relative z-[2] ml-[46%] my-0.5 -rotate-4 whitespace-nowrap font-script text-2xl font-bold text-orange">
+            you approve →
+          </p>
+          <div className="relative z-[2] ml-11 max-w-[400px] rotate-2 rounded-3xl border border-white/10 px-[22px] py-5 text-[#FFF8EF] shadow-[0_18px_40px_rgba(43,27,77,.22)] [background:radial-gradient(120%_80%_at_50%_0%,#2A2438_0%,#15121F_55%,#0E0C14_100%)]">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[10.5px] font-black tracking-[0.09em] text-[rgba(255,214,170,.75)]">
+                DRAFT · FITS ONE POST
               </span>
-            </h2>
-
-            <div className="mt-6 max-w-2xl space-y-4 text-base font-semibold leading-relaxed text-muted sm:text-lg">
-              <p>
-                Most indie founders already ship. They just never say it out loud. Bio says “build in public.” Feed is Cursor questions.
-              </p>
-              <p>
-                Growth on X — at 0–1K — comes from boring, concrete receipts: what shipped, a number, a link, a day count. Accounts like Marc Lou compound because they post that almost every day, then reply to people already in the conversation.
-              </p>
+              <span className="text-[11.5px] font-extrabold text-[rgba(245,240,255,.5)]">81/280</span>
             </div>
+            <p className="mb-4 whitespace-pre-line text-[14.5px] font-bold leading-[1.55]">
+              {`Shipped today.
+ShipLoud landing
 
-            <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-              {habitLoop.map((s) => (
-                <li key={s.n} className="card-soft flex flex-col p-5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full border-[3px] border-navy bg-orange text-sm font-black text-white shadow-[0_3px_0_#C9440A]">
-                    {s.n}
-                  </span>
-                  <h3 className="mt-3 text-lg font-black leading-snug text-navy">{s.title}</h3>
-                  <p className="mt-1.5 text-sm font-semibold leading-relaxed text-muted">{s.body}</p>
-                </li>
-              ))}
-            </ol>
-
-            <p className="mt-10 max-w-2xl text-lg font-extrabold leading-snug text-navy">
-              Noticed = consistent ship logs + replies, not a viral thread. ShipLoud turns today’s work into those posts before you talk yourself out of it.
+Not waiting for perfect.
+getshiploud.com`}
             </p>
-
-            <div className="card-soft mt-8 max-w-2xl border-2 border-navy/10 p-6 sm:p-7">
-              <p className="font-script text-xl text-orange">the honest bit →</p>
-              <p className="mt-2 font-bold leading-relaxed text-navy">
-                We don’t fake engagement or auto-post. Growth still comes from you showing up. The win is you actually show up, in a voice people follow.
-              </p>
+            <div className="flex gap-2">
+              <span className="inline-flex items-center whitespace-nowrap rounded-full bg-orange px-[18px] py-[9px] text-[13px] font-black text-white shadow-[0_3px_0_#C9440A]">
+                Post to X
+              </span>
+              <span className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-white/20 px-[18px] py-[9px] text-[13px] font-extrabold text-[#FFF8EF]/90">
+                Copy
+              </span>
             </div>
           </div>
-        </section>
+        </div>
+      </header>
 
-        {/* How it works */}
-        <section id="how" className="px-4 py-16 sm:px-6 sm:py-24">
-          <div className="mx-auto max-w-5xl">
-            <p className="font-script text-2xl text-orange">how it works →</p>
-            <h2 className="mt-2 max-w-lg text-3xl font-black tracking-tight text-navy sm:max-w-xl sm:text-4xl">
-              Three friendly steps. <span className="text-orange">Zero guru energy.</span>
-            </h2>
+      <section id="gap" className="mx-auto max-w-[1160px] px-6 py-14">
+        <p className="mb-2 font-script text-[26px] font-bold text-orange">the problem →</p>
+        <h2 className="mb-[34px] max-w-[640px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
+          Bio says build in public.
+          <br />
+          Feed is Cursor questions.
+        </h2>
+        <div className="mb-[22px] grid gap-[18px] md:grid-cols-3">
+          {[
+            {
+              n: '01',
+              title: 'You ship… quietly',
+              body: '0–1K followers. You ask good questions. You reply to every SaaS launch. Your own ship log is still in Notes.',
+            },
+            {
+              n: '02',
+              title: 'The feed gap',
+              body: 'Your timeline is tool replies and "how I grew to 10K" threads you\'ll never rewrite in your voice.',
+            },
+            {
+              n: '03',
+              title: 'What actually compounds',
+              body: 'The accounts you admire post boring, concrete updates. Numbers, screenshots, day 12. And quietly grow.',
+            },
+          ].map((c) => (
+            <div key={c.n} className="card-soft rounded-[26px] p-6">
+              <p className="mb-2 font-script text-2xl font-bold text-orange">{c.n}</p>
+              <h3 className="mb-2 text-[17px] font-black">{c.title}</h3>
+              <p className="text-sm font-bold leading-[1.55] text-muted text-pretty">{c.body}</p>
+            </div>
+          ))}
+        </div>
+        <p className="max-w-[640px] text-[16.5px] font-extrabold text-pretty">
+          ShipLoud turns your build progress into posts that sound like you shipped —{' '}
+          <span className="bg-[linear-gradient(transparent_62%,#FFE566_62%)]">not like you attended a webinar.</span>
+        </p>
+      </section>
 
-            <ol className="mt-12 grid gap-5 sm:grid-cols-3">
-              {steps.map((s) => (
-                <li key={s.n} className="card-soft relative p-6 pt-10">
-                  <span className="absolute -top-4 left-6 flex h-10 w-10 items-center justify-center rounded-full border-[3px] border-navy bg-orange text-lg font-black text-white shadow-[0_3px_0_#C9440A]">
-                    {s.n}
-                  </span>
-                  <h3 className="mt-2 text-xl font-black text-navy">{s.title}</h3>
-                  <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">{s.body}</p>
-                </li>
-              ))}
-            </ol>
+      <section id="how" className="mx-auto max-w-[1160px] px-6 py-14">
+        <p className="mb-2 font-script text-[26px] font-bold text-orange">the habit →</p>
+        <h2 className="mb-[34px] max-w-[760px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
+          ShipLoud doesn't buy reach. It makes the posting habit that actually gets founders noticed.
+        </h2>
+        <div className="mb-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ['1', 'Journal the ship', 'What shipped, numbers, blocker, link. Two minutes.'],
+            ['2', 'Get short options', 'A few drafts in your voice. From the journal, not thin air.'],
+            ['3', 'Approve & post', 'Post to X from the app, or copy. Nothing sends itself.'],
+            ['4', 'Reply to builders', 'You write it. Tap Reply on X. Mark "I posted it."'],
+            ['5', 'See the receipts', 'Posts, replies, follower snapshots. Was the habit real?'],
+          ].map(([n, title, body]) => (
+            <div key={n} className="rounded-[22px] border border-line bg-card p-[18px]">
+              <span className="mb-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange text-[12.5px] font-black text-white shadow-[0_2px_0_#C9440A]">
+                {n}
+              </span>
+              <h3 className="mb-1.5 text-[14.5px] font-black">{title}</h3>
+              <p className="text-[12.5px] font-bold leading-normal text-muted">{body}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mb-7 text-[16.5px] font-extrabold">
+          Noticed = <span className="bg-[linear-gradient(transparent_62%,#FFE566_62%)]">consistent ship logs + replies</span>,
+          not a viral thread.
+        </p>
+        <div className="grid items-stretch gap-[18px] lg:grid-cols-2">
+          <div className="card-soft rounded-[26px] p-[26px]">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <p className="mb-3 text-xs font-black tracking-[0.08em] text-orange">SHIPLOUD IS</p>
+                {[
+                  'A ship journal that drafts your posts',
+                  'An approve-first queue: Post to X, or copy',
+                  'A feed of builders you chose, for replies you write',
+                  'Weekly receipts of what you actually did',
+                ].map((line) => (
+                  <p key={line} className="mb-[9px] text-[13.5px] font-extrabold leading-snug last:mb-0">
+                    <span className="text-orange">✓</span>&nbsp; {line}
+                  </p>
+                ))}
+              </div>
+              <div>
+                <p className="mb-3 text-xs font-black tracking-[0.08em] text-muted">SHIPLOUD IS NOT</p>
+                {[
+                  'A scheduler',
+                  'An auto-reply bot (X blocks those. Good.)',
+                  'An algorithm or a growth hack',
+                  'A fake waitlist screenshot',
+                ].map((line) => (
+                  <p key={line} className="mb-[9px] text-[13.5px] font-bold leading-snug text-muted last:mb-0">
+                    <span className="font-black">✕</span>&nbsp; {line}
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
-        </section>
+          <div className="flex flex-col justify-center rounded-[26px] border-[1.5px] border-dashed border-line bg-cream-2 p-[26px]">
+            <p className="mb-2.5 font-script text-[26px] font-bold text-orange">the honest bit →</p>
+            <p className="text-[16.5px] font-extrabold leading-relaxed text-pretty">
+              We don't fake engagement or auto-post. Growth still comes from you showing up. The win is you actually
+              show up, in a voice people follow.
+            </p>
+          </div>
+        </div>
+      </section>
 
-        <ProductTour />
+      <section id="inside" className="mx-auto max-w-[1160px] px-6 py-14">
+        <p className="mb-2 font-script text-[26px] font-bold text-orange">see it →</p>
+        <h2 className="mb-2.5 text-[40px] font-black leading-[1.12] tracking-[-0.02em]">Journal. Drafts. Replies.</h2>
+        <p className="mb-[30px] text-[15.5px] font-bold text-muted">
+          The loop in three screens. Short, concrete, ready to approve.
+        </p>
+        <div className="grid gap-5 md:grid-cols-3">
+          <div>
+            <div className="flex h-full flex-col overflow-hidden rounded-[22px] border border-line bg-card shadow-[0_12px_28px_rgba(43,27,77,.1)]">
+              <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(180deg,#FFFDF7_0%,#F7F0DE_100%)] px-3.5 py-[11px]">
+                <WindowDots />
+                <span className="whitespace-nowrap text-[12.5px] font-extrabold text-muted">
+                  <span className="font-black text-orange">01</span> Ship journal
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col bg-cream p-3">
+                <div className={DARK_PANEL}>
+                  <p className="text-[10px] font-black tracking-[0.09em] text-[rgba(255,214,170,.72)]">TODAY · SHIPLOUD</p>
+                  <p className="text-base font-black text-[#FFFDF8]">What actually shipped</p>
+                  {[
+                    'ShipLoud landing live at getshiploud.com',
+                    '~9 followers · $0 MRR · 1 product shipped',
+                    'X login blocked. Decision: dogfood before pitch.',
+                  ].map((line) => (
+                    <div
+                      key={line}
+                      className="rounded-[10px] border border-white/10 bg-white/[0.04] px-[11px] py-[9px] text-[12.5px] font-bold leading-snug"
+                    >
+                      {line}
+                    </div>
+                  ))}
+                  <span className="mt-auto inline-flex items-center justify-center whitespace-nowrap rounded-full bg-orange px-4 py-[9px] text-[12.5px] font-black text-white shadow-[0_3px_0_#C9440A]">
+                    Save today's entry
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="mt-3 text-center text-[13.5px] font-extrabold">Log it in two minutes. This is the source of truth.</p>
+          </div>
 
-        {/* Features */}
-        <section id="features" className="px-4 py-16 sm:px-6 sm:py-24">
-          <div className="mx-auto max-w-5xl">
-            <p className="font-script text-2xl text-orange">the toolkit →</p>
-            <h2 className="mt-2 max-w-xl text-3xl font-black tracking-tight text-navy sm:text-4xl">
-              Everything you need to post like you ship.
-            </h2>
+          <div>
+            <div className="flex h-full flex-col overflow-hidden rounded-[22px] border border-line bg-card shadow-[0_12px_28px_rgba(43,27,77,.1)]">
+              <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(180deg,#FFFDF7_0%,#F7F0DE_100%)] px-3.5 py-[11px]">
+                <WindowDots />
+                <span className="whitespace-nowrap text-[12.5px] font-extrabold text-muted">
+                  <span className="font-black text-orange">02</span> Pick a draft
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col bg-cream p-3">
+                <div className={DARK_PANEL}>
+                  <p className="text-[10px] font-black tracking-[0.09em] text-[rgba(255,214,170,.72)]">
+                    DRAFTS · FROM YOUR JOURNAL
+                  </p>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-[11px]">
+                    <div className="mb-[7px] flex justify-between">
+                      <span className="inline-flex rounded-full bg-sticker-yellow px-2 py-0.5 text-[9.5px] font-black tracking-wide text-navy">
+                        FITS ONE POST
+                      </span>
+                      <span className="text-[10.5px] font-extrabold text-[rgba(245,240,255,.5)]">81/280</span>
+                    </div>
+                    <p className="whitespace-pre-line text-[12.5px] font-bold leading-normal">
+                      {`Shipped today.
+ShipLoud landing
 
-            <div className="mt-12 grid gap-5 sm:grid-cols-2">
-              {features.map((f, i) => (
-                <article
-                  key={f.title}
-                  className={`card-soft p-6 ${i % 2 === 0 ? '-rotate-1' : 'rotate-1'} hover:rotate-0 transition`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className={`sticker ${f.tint} !px-2.5 !py-1 text-xl`} aria-hidden>
-                      {f.emoji}
-                    </span>
-                    <div>
-                      <h3 className="text-xl font-black text-navy">{f.title}</h3>
-                      <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">{f.body}</p>
+Not waiting for perfect.
+getshiploud.com`}
+                    </p>
+                    <div className="mt-2.5 flex gap-[7px]">
+                      <span className="inline-flex whitespace-nowrap rounded-full bg-orange px-[13px] py-[7px] text-[11.5px] font-black text-white shadow-[0_3px_0_#C9440A]">
+                        Post to X
+                      </span>
+                      <span className="inline-flex whitespace-nowrap rounded-full border-[1.5px] border-white/20 px-[13px] py-[7px] text-[11.5px] font-extrabold text-[#FFF8EF]/90">
+                        Copy
+                      </span>
                     </div>
                   </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-[11px] opacity-65">
+                    <p className="whitespace-pre-line text-[12.5px] font-bold leading-normal">
+                      {`~9 followers · $0 MRR
+ShipLoud landing
 
-        {/* Example draft */}
-        <section className="px-4 py-16 sm:px-6 sm:py-24">
-          <div className="mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-2">
-            <div>
-              <p className="font-script text-2xl text-orange">example draft →</p>
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-navy sm:text-4xl">
-                Hook. Short lines. <span className="text-orange">Numbers.</span>
-              </h2>
-              <p className="mt-4 font-semibold leading-relaxed text-muted">
-                ShipLoud drafts in a build-in-public voice — the kind that gets bookmarks from other builders, not likes from bots. You approve. Then you copy to X.
-              </p>
-              <ul className="mt-6 space-y-3 text-sm font-bold text-navy">
-                <li className="flex items-center gap-2">
-                  <span className="sticker bg-sticker-yellow !px-2 !py-0.5 !text-xs">✓</span>
-                  Concrete metrics over vague inspiration
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="sticker bg-sticker-mint !px-2 !py-0.5 !text-xs">✓</span>
-                  Day counters & ship receipts
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="sticker bg-sticker-pink !px-2 !py-0.5 !text-xs">✓</span>
-                  One clear CTA / question at the end
-                </li>
-              </ul>
+Posting the receipt.`}
+                    </p>
+                  </div>
+                  <p className="mt-auto text-[11px] font-bold text-[rgba(245,240,255,.55)]">
+                    3 options · regen if they're dry · nothing posts itself
+                  </p>
+                </div>
+              </div>
             </div>
-            <ExampleDraft />
+            <p className="mt-3 text-center text-[13.5px] font-extrabold">Three short options. Pick one. You tap Post.</p>
           </div>
-        </section>
 
-        {/* Pricing tease */}
-        <section id="pricing" className="px-4 py-16 sm:px-6 sm:py-20">
-          <div className="card-soft relative mx-auto max-w-3xl border-2 border-navy/10 px-5 pb-8 pt-8 text-center sm:px-12 sm:pb-12 sm:pt-16">
-            <div className="pointer-events-none absolute left-4 top-4 hidden sm:block" aria-hidden>
-              <Sticker label="Free in beta" color="bg-sticker-mint" rotate="-rotate-6" className="!text-xs sm:!text-sm" />
+          <div>
+            <div className="flex h-full flex-col overflow-hidden rounded-[22px] border border-line bg-card shadow-[0_12px_28px_rgba(43,27,77,.1)]">
+              <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(180deg,#FFFDF7_0%,#F7F0DE_100%)] px-3.5 py-[11px]">
+                <WindowDots />
+                <span className="whitespace-nowrap text-[12.5px] font-extrabold text-muted">
+                  <span className="font-black text-orange">03</span> Reply radar
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col bg-cream p-3">
+                <div className={DARK_PANEL}>
+                  <p className="text-[10px] font-black tracking-[0.09em] text-[rgba(255,214,170,.72)]">
+                    REPLY RADAR · YOUR BUILDERS
+                  </p>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-[11px]">
+                    <p className="mb-1 text-[12.5px] font-black text-[#FFB088]">@a_builder_you_added</p>
+                    <p className="text-xs font-bold leading-snug text-[#FFF8EF]/78">
+                      Short post about shipping ugly MVPs before polishing distribution.
+                    </p>
+                  </div>
+                  <div className="rounded-[10px] border border-white/[0.06] bg-black/28 px-[11px] py-[9px]">
+                    <p className="mb-1 text-[9.5px] font-extrabold tracking-wide text-[rgba(255,214,170,.7)]">
+                      YOUR REPLY · YOU WRITE IT
+                    </p>
+                    <p className="text-xs font-bold leading-snug">
+                      Shipping the ugly version today. Landing live, $0. Polish can wait.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-orange px-4 py-[9px] text-[12.5px] font-black text-white shadow-[0_3px_0_#C9440A]">
+                    Reply on X
+                  </span>
+                  <p className="mt-auto text-[11px] font-bold text-[rgba(245,240,255,.55)]">
+                    Opens X with your text ready. You tap Post. Then mark "I posted it."
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="pointer-events-none absolute right-4 top-5 hidden sm:block" aria-hidden>
-              <Sticker label="Founding $19" color="bg-sticker-yellow" rotate="rotate-6" className="!text-xs sm:!text-sm" />
-            </div>
-            <div className="mb-4 flex flex-wrap items-center justify-center gap-2 sm:hidden">
-              <Sticker label="Free in beta" color="bg-sticker-mint" rotate="-rotate-3" className="!text-xs" />
-              <Sticker label="Founding $19" color="bg-sticker-yellow" rotate="rotate-3" className="!text-xs" />
-            </div>
-            <p className="font-script text-2xl text-orange">pricing →</p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-navy sm:text-4xl">
-              Free while in beta.
-            </h2>
-            <p className="mt-3 text-lg font-bold text-muted">
-              Founding members lock <span className="text-orange">$19/mo</span> forever after launch.
+            <p className="mt-3 text-center text-[13.5px] font-extrabold">
+              Reply to builders you chose. In your voice, not a bot's.
             </p>
-            <p className="mt-2 text-sm font-semibold text-muted">
-              No annual trap. No “growth mastermind.” Just the engine.
-            </p>
-            <div className="mx-auto mt-8 max-w-md text-left">
-              <WaitlistForm id="pricing-waitlist" size="md" />
-            </div>
           </div>
-        </section>
+        </div>
+        <p className="mx-auto mt-[26px] max-w-[560px] text-center text-[13px] font-bold text-muted text-pretty">
+          Approve-first, always. Originals post through the official X API when you connect. Replies are yours: ShipLoud
+          opens X with your text ready.
+        </p>
+      </section>
 
-        {/* Final CTA */}
-        <section id="join" className="px-4 py-20 sm:px-6 sm:py-28">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="font-script text-2xl text-orange">ready when you are →</p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-navy sm:text-5xl">
-              Draft. Ship. Grow. <span className="text-orange">Loud.</span>
-            </h2>
-            <p className="mx-auto mt-4 max-w-md font-semibold text-muted">
-              Join indie hackers who are done lurk-replying and ready to post what they actually build.
-            </p>
-            <div className="relative mx-auto mt-8 max-w-md text-left">
-              <WaitlistForm id="final-waitlist" />
-            </div>
-            <p className="mt-4 text-xs font-bold text-muted">No spam. One email when we’re live.</p>
+      <section id="pricing" className="mx-auto max-w-[1160px] px-6 pb-20 pt-16 text-center">
+        <p className="mb-2 font-script text-[26px] font-bold text-orange">ready when you are →</p>
+        <h2 className="mb-[30px] text-[46px] font-black leading-tight tracking-[-0.02em]">
+          Draft. Ship. Grow. <span className="text-orange">Loud.</span>
+        </h2>
+        <div className="card-soft relative mx-auto max-w-[560px] rounded-[28px] px-9 py-[38px]">
+          <span className="sticker absolute -top-4 left-[26px] -rotate-[5deg] bg-sticker-mint px-3.5 py-1.5 text-[12.5px]">
+            Free in beta
+          </span>
+          <span className="sticker absolute -top-4 right-[26px] rotate-[4deg] bg-sticker-pink px-3.5 py-1.5 text-[12.5px]">
+            Founding $19
+          </span>
+          <h3 className="mb-2.5 text-[28px] font-black">Free while in beta.</h3>
+          <p className="mb-6 text-[15px] font-bold leading-relaxed text-muted text-pretty">
+            Founding members lock <span className="font-black text-navy">$19/mo forever</span> after launch. No annual
+            trap. No growth mastermind. Just the engine.
+          </p>
+          <div className="mx-auto flex justify-center">
+            <WaitlistForm id="pricing-waitlist" source="marketing-pricing" />
           </div>
-        </section>
-      </main>
+          <p className="mt-4 text-[12.5px] font-bold text-muted">No spam. One email when we're live.</p>
+        </div>
+      </section>
 
-      {/* Footer */}
-      <footer className="border-t border-navy/10 px-4 py-8 sm:px-6">
-        <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <Logo className="text-base" />
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold text-muted">
-            <a href="/privacy" className="transition hover:text-orange">
-              Privacy
-            </a>
-            <a href="/terms" className="transition hover:text-orange">
-              Terms
-            </a>
-            <span>© 2026 ShipLoud · getshiploud.com</span>
-          </nav>
+      <footer className="border-t border-line bg-cream-2">
+        <div className="mx-auto flex max-w-[1160px] items-center gap-3.5 px-6 py-[22px]">
+          <span className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[9px] bg-orange">
+            <SmileMark size={15} />
+          </span>
+          <span className="text-[13px] font-extrabold">© 2026 ShipLoud · getshiploud.com</span>
+          <span className="flex-1" />
+          <a href="/privacy" className="text-[13px] font-extrabold text-muted no-underline hover:text-orange">
+            Privacy
+          </a>
+          <a href="/terms" className="text-[13px] font-extrabold text-muted no-underline hover:text-orange">
+            Terms
+          </a>
+          <a href="#pricing" className="text-[13px] font-extrabold text-muted no-underline hover:text-orange">
+            Waitlist
+          </a>
         </div>
       </footer>
     </div>

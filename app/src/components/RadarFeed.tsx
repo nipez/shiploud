@@ -10,6 +10,7 @@ import { fetchRadar, fetchRadarReplies, repliesForItem, type RadarItem, type Rad
 import { track } from '../track'
 import { xReplyIntentUrl } from '../url'
 import { loadRepliedMap, markReplied, unmarkReplied, type RepliedMark } from '../replied'
+import { ScreenHead } from './ScreenHead'
 
 const LAST_KEY = 'shiploud-radar-last-v6'
 
@@ -121,16 +122,6 @@ function displayHandle(handle: string): string {
   return h ? `@${h}` : ''
 }
 
-function formatCount(n: number): string {
-  if (n >= 1_000_000) {
-    const v = n / 1_000_000
-    return `${v >= 10 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, '')}M`
-  }
-  if (n >= 10_000) return `${Math.round(n / 1000)}K`
-  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K`
-  return String(n)
-}
-
 function displayNameOf(item: RadarItem): string {
   const name = (item.displayName || '').trim()
   if (name) return name
@@ -147,9 +138,10 @@ function tweetUrl(item: RadarItem): string {
 
 type Props = {
   setup: Setup
+  onToast?: (msg: string) => void
 }
 
-export default function RadarFeed({ setup }: Props) {
+export default function RadarFeed({ setup, onToast }: Props) {
   const project = activeProject(setup)
   const handles = useMemo(
     () =>
@@ -319,6 +311,10 @@ export default function RadarFeed({ setup }: Props) {
 
   function openReplyIntent(item: RadarItem) {
     const id = `${item.handle}:${item.tweetId}`
+    if (!draftFor(item)) {
+      onToast?.("Write the reply first. It has to be yours.")
+      return
+    }
     track('x_reply_intent', { handle: item.handle, tweetId: item.tweetId })
     setAwaitingConfirm((prev) => ({ ...prev, [id]: true }))
   }
@@ -342,15 +338,6 @@ export default function RadarFeed({ setup }: Props) {
     track('x_replied', { handle: item.handle, tweetId: item.tweetId })
   }
 
-  function dismissConfirm(item: RadarItem) {
-    const id = `${item.handle}:${item.tweetId}`
-    setAwaitingConfirm((prev) => {
-      const next = { ...prev }
-      delete next[id]
-      return next
-    })
-  }
-
   function undoPosted(item: RadarItem) {
     setReplied(unmarkReplied(item.tweetId))
   }
@@ -363,16 +350,19 @@ export default function RadarFeed({ setup }: Props) {
       await navigator.clipboard.writeText(text)
       setCopiedId(id)
       track('reply_copied', { handle: item.handle })
+      onToast?.('copied')
       window.setTimeout(() => setCopiedId(null), 1500)
     } catch {
       window.prompt('Copy manually:', text)
       track('reply_copied', { handle: item.handle })
+      onToast?.('copied')
     }
   }
 
   function refresh() {
     track('reply_radar_refreshed', { count: handles.length })
     void load(true)
+    onToast?.('radar refreshed')
   }
 
   const status = feedStatus({
@@ -414,13 +404,12 @@ export default function RadarFeed({ setup }: Props) {
 
   if (handles.length === 0) {
     return (
-      <div className="space-y-2">
-        <Header loading={false} onRefresh={refresh} disabled />
-        <MoreBuildersLink />
-        <p className="rounded-[28px] border border-dashed border-line bg-card/60 px-4 py-4 text-sm font-semibold text-muted">
+      <div>
+        <RadarChrome loading={false} onRefresh={refresh} disabled />
+        <p className="max-w-[760px] rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-6 text-sm font-bold text-muted">
           Add favorite builders to fill this feed.{' '}
-          <a href="#follows" className="font-extrabold text-orange hover:underline">
-            Suggested follows
+          <a href="#builders" className="font-extrabold text-orange hover:underline">
+            Builders
           </a>
           {' · '}
           <a href="#setup" className="font-extrabold text-orange hover:underline">
@@ -432,11 +421,10 @@ export default function RadarFeed({ setup }: Props) {
   }
 
   return (
-    <div className="space-y-3">
-      <Header loading={loading} onRefresh={refresh} disabled={loading} />
-      <MoreBuildersLink />
+    <div>
+      <RadarChrome loading={loading} onRefresh={refresh} disabled={loading} />
       {status.text && (
-        <div className="space-y-1.5">
+        <div className="mb-3.5 max-w-[760px] space-y-1.5">
           <p className="text-sm font-semibold text-muted" aria-live="polite">
             {status.text}
           </p>
@@ -464,206 +452,181 @@ export default function RadarFeed({ setup }: Props) {
         tags={categoryChips}
         showUncategorized={showUncategorized}
       />
-      {error && <p className="text-sm font-semibold text-orange-deep">{error}</p>}
-      {loading && items.length === 0 && (
-        <div className="space-y-3" aria-hidden>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-      )}
-      {visible.map((item) => {
-        const id = `${item.handle}:${item.tweetId}`
-        const href = tweetUrl(item)
-        const draft = customDrafts[id] || ''
-        const draftEmpty = !draft.trim()
-        const itemIdeas = ideas[id] ?? []
-        const showIdeas = Boolean(ideasOpen[id])
-        const marked = replied[item.tweetId]
-        const awaiting = Boolean(awaitingConfirm[id]) && !marked
-        return (
-          <article key={id} className="card-soft overflow-hidden">
-            <div className="m-2 rounded-2xl border border-line bg-white px-3 py-3 sm:m-2.5 sm:px-4 sm:py-3.5">
-              <TweetBody item={item} href={href} />
-            </div>
-            {marked ? (
-              <div className="border-t border-line bg-cream-2/70 px-3 py-2.5 sm:px-4">
-                <p className="text-sm font-extrabold text-navy">
-                  Replied {displayHandle(marked.handle)}
-                  {marked.markedAt ? (
-                    <span className="font-semibold text-muted">
-                      {' '}
-                      · {relativeTime(marked.markedAt) || 'just now'}
-                    </span>
-                  ) : null}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => undoPosted(item)}
-                  className="mt-1 text-sm font-extrabold text-orange hover:underline"
-                >
-                  Undo
-                </button>
-              </div>
-            ) : (
-              <div className="border-t border-line bg-cream-2/70 px-3 py-2.5 sm:px-4">
-                <textarea
-                  value={draft}
-                  onChange={(e) =>
-                    setCustomDrafts((prev) => ({ ...prev, [id]: e.target.value }))
-                  }
-                  placeholder="Write a reply"
-                  rows={2}
-                  maxLength={280}
-                  className="input-soft min-h-[2.75rem] w-full resize-none px-2.5 py-1.5 text-[13px] font-semibold leading-snug"
-                />
-                <p className="mt-1.5 text-xs font-semibold text-muted">
-                  {awaiting
-                    ? 'Opened X with your reply. We can’t see if you posted — tap I posted it if you did.'
-                    : 'X blocks apps from sending replies. This opens X with your text ready.'}
-                </p>
-                <div className="mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => void loadIdeas(item)}
-                    disabled={generating.has(id)}
-                    className="text-sm font-extrabold text-orange hover:underline disabled:opacity-50"
-                  >
-                    {generating.has(id) ? 'Finding ideas…' : 'Need ideas?'}
-                  </button>
-                  {showIdeas && !generating.has(id) && itemIdeas.length > 0 && (
-                    <ul className="mt-1.5 space-y-1" aria-label="Reply ideas">
-                      {itemIdeas.map((reply, i) => {
-                        const selected = draft.trim() === reply
-                        return (
-                          <li key={`${id}-idea-${i}`}>
-                            <button
-                              type="button"
-                              onClick={() => applyIdea(item, reply)}
-                              className={`w-full rounded-xl px-2.5 py-1.5 text-left text-[13px] font-semibold leading-snug ${
-                                selected
-                                  ? 'bg-orange/15 text-navy ring-1 ring-orange/35'
-                                  : 'text-muted hover:bg-card/80 hover:text-navy'
-                              }`}
-                            >
-                              {reply}
-                            </button>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
+      {error && <p className="mb-3 text-sm font-semibold text-orange-deep">{error}</p>}
+      <div className="flex max-w-[760px] flex-col gap-3.5">
+        {loading && items.length === 0 && (
+          <div className="space-y-3.5" aria-hidden>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        )}
+        {visible.map((item) => {
+          const id = `${item.handle}:${item.tweetId}`
+          const href = tweetUrl(item)
+          const draft = customDrafts[id] || ''
+          const draftEmpty = !draft.trim()
+          const itemIdeas = ideas[id] ?? []
+          const showIdeas = Boolean(ideasOpen[id])
+          const marked = replied[item.tweetId]
+          const awaiting = Boolean(awaitingConfirm[id]) && !marked
+          const idea = itemIdeas[0]
+          return (
+            <article key={id} className="card-soft rounded-3xl px-5 py-[18px]">
+              <div className="mb-[11px] flex items-center gap-[11px]">
+                <Avatar name={displayNameOf(item)} src={item.avatarUrl} />
+                <div className="flex min-w-0 flex-col">
+                  <span className="text-[14.5px] font-black text-navy">{displayNameOf(item)}</span>
+                  <span className="text-xs font-bold text-muted">
+                    {displayHandle(item.handle)}
+                    {item.createdAt ? ` · ${relativeTime(item.createdAt)}` : ''}
+                  </span>
                 </div>
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2.5 sm:px-4 sm:py-3">
-              {marked ? (
+                <span className="flex-1" />
                 <a
                   href={href}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => track('reply_handle_clicked', { handle: item.handle })}
-                  className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40"
+                  className="whitespace-nowrap text-xs font-extrabold text-muted hover:text-orange"
                 >
                   View post
                 </a>
-              ) : awaiting ? (
-                <>
+              </div>
+              <p className="mb-[13px] whitespace-pre-wrap text-sm font-bold leading-[1.55] text-navy-soft">
+                {item.text}
+              </p>
+              <MediaGrid media={item.media ?? []} />
+
+              {marked ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center rounded-full border-[1.5px] border-sticker-mint bg-sticker-mint/25 px-4 py-[7px] text-[12.5px] font-black">
+                    ✓ Replied · counted in this week's receipts
+                  </div>
                   <button
                     type="button"
-                    onClick={() => confirmPosted(item)}
-                    className="btn-pill min-h-12 px-6 py-3 text-base"
+                    onClick={() => undoPosted(item)}
+                    className="text-xs font-extrabold text-muted hover:text-orange"
                   >
-                    I posted it
+                    Undo
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => dismissConfirm(item)}
-                    className="min-h-11 rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40"
-                  >
-                    Not yet
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void copyReply(item)}
-                    disabled={draftEmpty}
-                    className="min-h-11 rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40 disabled:opacity-50"
-                  >
-                    {copiedId === id ? 'Copied ✓' : 'Copy reply'}
-                  </button>
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => track('reply_handle_clicked', { handle: item.handle })}
-                    className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40"
-                  >
-                    View post
-                  </a>
-                </>
+                </div>
               ) : (
                 <>
-                  {draftEmpty ? (
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span className="whitespace-nowrap text-[10.5px] font-black tracking-[0.08em] text-muted">
+                      YOUR REPLY
+                    </span>
+                    <span className="flex-1" />
                     <button
                       type="button"
-                      disabled
-                      className="btn-pill min-h-12 px-6 py-3 text-base opacity-50"
+                      onClick={() => void loadIdeas(item)}
+                      disabled={generating.has(id)}
+                      className="whitespace-nowrap text-[11.5px] font-extrabold text-muted underline underline-offset-2 hover:text-orange disabled:opacity-50"
                     >
-                      Reply on X
+                      {generating.has(id) ? 'Finding ideas…' : showIdeas ? 'Hide ideas' : 'Need ideas?'}
                     </button>
-                  ) : (
-                    <a
-                      href={xReplyIntentUrl(item.tweetId, draft.trim())}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={() => openReplyIntent(item)}
-                      className="btn-pill min-h-12 px-6 py-3 text-base"
+                  </div>
+                  {showIdeas && !generating.has(id) && idea && (
+                    <button
+                      type="button"
+                      onClick={() => applyIdea(item, idea)}
+                      className="mb-2 w-full rounded-xl border-[1.5px] border-dashed border-line bg-cream-2 px-3 py-[9px] text-left text-[12.5px] font-bold leading-snug text-navy-soft hover:border-orange"
                     >
-                      Reply on X
-                    </a>
+                      {idea} <span className="font-black text-orange">· use it</span>
+                    </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => void copyReply(item)}
-                    disabled={draftEmpty}
-                    className="min-h-11 rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40 disabled:opacity-50"
-                  >
-                    {copiedId === id ? 'Copied ✓' : 'Copy reply'}
-                  </button>
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => track('reply_handle_clicked', { handle: item.handle })}
-                    className="inline-flex min-h-11 items-center rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40"
-                  >
-                    View post
-                  </a>
-                  {draftEmpty && (
-                    <p className="basis-full text-xs font-semibold text-muted">Type a reply first.</p>
+                  <textarea
+                    value={draft}
+                    onChange={(e) =>
+                      setCustomDrafts((prev) => ({ ...prev, [id]: e.target.value }))
+                    }
+                    placeholder="Short. Concrete. A receipt or a real question."
+                    rows={2}
+                    maxLength={280}
+                    className="input-soft mb-[11px] w-full resize-y text-[13.5px] font-bold leading-normal"
+                  />
+                  {awaiting ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => confirmPosted(item)}
+                        className="whitespace-nowrap rounded-full border-2 border-navy bg-sticker-mint px-[18px] py-2 text-[12.5px] font-black text-navy"
+                      >
+                        I posted it
+                      </button>
+                      <a
+                        href={xReplyIntentUrl(item.tweetId, draft.trim())}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => openReplyIntent(item)}
+                        className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy"
+                      >
+                        Reply on X again
+                      </a>
+                      <span className="text-[11.5px] font-bold text-muted">
+                        Opened X with your reply. We can't see if you posted — mark it if you did.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {draftEmpty ? (
+                        <button
+                          type="button"
+                          onClick={() => openReplyIntent(item)}
+                          className="btn-pill whitespace-nowrap px-[18px] py-[9px] text-[12.5px]"
+                        >
+                          Reply on X
+                        </button>
+                      ) : (
+                        <a
+                          href={xReplyIntentUrl(item.tweetId, draft.trim())}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => openReplyIntent(item)}
+                          className="btn-pill whitespace-nowrap px-[18px] py-[9px] text-[12.5px]"
+                        >
+                          Reply on X
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void copyReply(item)}
+                        disabled={draftEmpty}
+                        className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy disabled:opacity-50"
+                      >
+                        {copiedId === id ? '✓ Copied' : 'Copy reply'}
+                      </button>
+                      <span className="text-[11.5px] font-bold text-muted">
+                        Opens X with your text ready. You tap Post.
+                      </span>
+                    </div>
                   )}
                 </>
               )}
-            </div>
-          </article>
-        )
-      })}
-      {!loading && items.length === 0 && !error && (
-        <p className="rounded-[28px] border border-dashed border-line bg-card/60 px-4 py-4 text-sm font-semibold text-muted">
-          No public posts right now — try Refresh.
-        </p>
-      )}
-      {!loading && items.length > 0 && visible.length === 0 && (
-        <p className="rounded-[28px] border border-dashed border-line bg-card/60 px-4 py-4 text-sm font-semibold text-muted">
-          {query.trim()
-            ? `No posts mentioning “${query.trim()}”.`
-            : category === 'uncategorized'
-              ? 'No posts from uncategorized people.'
-              : category !== 'all'
-                ? `No posts from people tagged ${category}.`
-                : 'No posts match this filter.'}
-        </p>
-      )}
+            </article>
+          )
+        })}
+        {!loading && items.length === 0 && !error && (
+          <p className="rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-6 text-sm font-bold text-muted">
+            No public posts right now — try Refresh.
+          </p>
+        )}
+        {!loading && items.length > 0 && visible.length === 0 && (
+          <p className="rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-6 text-sm font-bold text-muted">
+            {query.trim()
+              ? `No posts mentioning “${query.trim()}”.`
+              : category === 'uncategorized'
+                ? 'No posts from uncategorized people.'
+                : category !== 'all'
+                  ? `No posts from people tagged ${category}.`
+                  : 'No posts match this filter.'}
+          </p>
+        )}
+      </div>
+      <p className="mt-[18px] max-w-[640px] text-xs font-bold text-muted">
+        Radar reads public posts via fxtwitter, cached. It can lag — that's the honest cost of not buying the X firehose.
+      </p>
     </div>
   )
 }
@@ -688,42 +651,19 @@ function SkeletonCard() {
   )
 }
 
-function TweetBody({ item, href }: { item: RadarItem; href: string }) {
-  const name = displayNameOf(item)
-  const handle = displayHandle(item.handle)
-  const time = item.createdAt ? relativeTime(item.createdAt) : ''
-
-  return (
-    <div className="flex gap-3">
-      <a href={href} target="_blank" rel="noreferrer" className="shrink-0">
-        <Avatar name={name} src={item.avatarUrl} />
-      </a>
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-          <span className="truncate text-[15px] font-extrabold leading-tight text-navy">{name}</span>
-          <span className="truncate text-[13px] font-semibold text-muted">{handle}</span>
-          {time && (
-            <>
-              <span className="text-[13px] font-semibold text-muted/70">·</span>
-              <span className="text-[13px] font-semibold text-muted">{time}</span>
-            </>
-          )}
-        </div>
-        <PostText text={item.text} />
-        <MediaGrid media={item.media ?? []} />
-        <MetricsRow likes={item.likes} reposts={item.reposts} replies={item.replies} />
-      </div>
-    </div>
-  )
-}
-
 function Avatar({ name, src }: { name: string; src: string }) {
   const [failed, setFailed] = useState(!src)
+  useEffect(() => {
+    setFailed(!src)
+  }, [src])
   const letter = (name.replace(/^@+/, '').trim()[0] || '?').toUpperCase()
+  const colors = ['#FFE566', '#FF8FB8', '#7DFFB3', '#7EC8FF', '#C9A8FF']
+  const color = colors[letter.charCodeAt(0) % colors.length]
   if (failed) {
     return (
       <span
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-cream text-sm font-extrabold text-orange ring-1 ring-line"
+        className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border-2 border-navy text-[15px] font-black text-navy"
+        style={{ background: color }}
         aria-hidden
       >
         {letter}
@@ -734,50 +674,12 @@ function Avatar({ name, src }: { name: string; src: string }) {
     <img
       src={src}
       alt=""
-      width={40}
-      height={40}
+      width={38}
+      height={38}
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
-      className="h-10 w-10 rounded-full object-cover ring-1 ring-line"
+      className="h-[38px] w-[38px] shrink-0 rounded-full border-2 border-navy object-cover"
     />
-  )
-}
-
-function PostText({ text }: { text: string }) {
-  const ref = useRef<HTMLParagraphElement>(null)
-  const [expanded, setExpanded] = useState(false)
-  const [overflows, setOverflows] = useState(false)
-
-  useEffect(() => {
-    setExpanded(false)
-  }, [text])
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el || expanded) return
-    setOverflows(el.scrollHeight > el.clientHeight + 12)
-  }, [text, expanded])
-
-  return (
-    <div className="mt-1">
-      <p
-        ref={ref}
-        className={`whitespace-pre-wrap break-words text-[15px] font-semibold leading-relaxed text-navy ${
-          expanded ? '' : 'max-h-[28rem] overflow-hidden'
-        }`}
-      >
-        {text}
-      </p>
-      {overflows && !expanded && (
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="mt-1 text-sm font-extrabold text-orange hover:underline"
-        >
-          Show more
-        </button>
-      )}
-    </div>
   )
 }
 
@@ -822,39 +724,35 @@ function MediaTile({ media, solo }: { media: RadarMedia; solo: boolean }) {
   )
 }
 
-function MetricsRow({
-  likes,
-  reposts,
-  replies,
+function RadarChrome({
+  loading,
+  onRefresh,
+  disabled,
 }: {
-  likes: number | null
-  reposts: number | null
-  replies: number | null
+  loading: boolean
+  onRefresh: () => void
+  disabled?: boolean
 }) {
-  const bits: Array<{ label: string; n: number }> = []
-  if (replies != null) bits.push({ label: '💬', n: replies })
-  if (reposts != null) bits.push({ label: '↻', n: reposts })
-  if (likes != null) bits.push({ label: '♡', n: likes })
-  if (bits.length === 0) return null
   return (
-    <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-bold text-muted">
-      {bits.map((b) => (
-        <span key={b.label}>
-          <span className="mr-1 font-semibold text-muted/80">{b.label}</span>
-          {formatCount(b.n)}
-        </span>
-      ))}
-    </p>
-  )
-}
-
-function MoreBuildersLink() {
-  return (
-    <p className="text-sm font-semibold text-muted">
-      <a href="#follows" className="font-extrabold text-orange hover:underline">
-        More builders to follow →
-      </a>
-    </p>
+    <ScreenHead
+      eyebrow="enter the room →"
+      title="Reply radar"
+      sub="Public posts from builders you added — not your X timeline. You write every reply, you tap Post on X, you mark it."
+      action={
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={disabled}
+          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy disabled:opacity-50"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
+            <path d="M21 12a9 9 0 1 1-2.6-6.3" />
+            <path d="M21 3v6h-6" />
+          </svg>
+          {loading ? 'Refreshing…' : 'Refresh'}
+        </button>
+      }
+    />
   )
 }
 
@@ -878,7 +776,7 @@ function FeedFilters({
   if (showUncategorized) chips.push({ id: 'uncategorized', label: 'Uncategorized' })
 
   return (
-    <div className="space-y-2">
+    <div className="mb-3.5 max-w-[760px] space-y-2">
       <p className="text-sm font-semibold text-muted">Filter people, or search what they posted.</p>
       <label className="block">
         <span className="sr-only">Posts mentioning</span>
@@ -916,31 +814,3 @@ function FeedFilters({
   )
 }
 
-function Header({
-  loading,
-  onRefresh,
-  disabled,
-}: {
-  loading: boolean
-  onRefresh: () => void
-  disabled?: boolean
-}) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-2">
-      <div>
-        <h3 className="text-lg font-extrabold tracking-tight text-navy">Your feed</h3>
-        <p className="text-sm text-muted">
-          Write a reply, then Reply on X. After you post, tap I posted it.
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onRefresh}
-        disabled={disabled}
-        className="min-h-11 rounded-full border border-line bg-card px-4 py-2 text-sm font-extrabold text-navy hover:border-orange/40 disabled:opacity-50"
-      >
-        {loading ? 'Refreshing…' : 'Refresh'}
-      </button>
-    </div>
-  )
-}

@@ -16,6 +16,7 @@ type Props = {
   onMarkReplied: (id: string) => void
   onAddReply: (r: ReplyTarget) => void
   xConnection: XConnectionState
+  onToast: (msg: string) => void
 }
 
 export default function Queue({
@@ -26,6 +27,7 @@ export default function Queue({
   onMarkReplied,
   onAddReply,
   xConnection,
+  onToast,
 }: Props) {
   const approved = drafts
     .filter((d) => d.status === 'approved')
@@ -45,10 +47,12 @@ export default function Queue({
       await navigator.clipboard.writeText(text)
       setCopied(id)
       track(kind === 'reply' ? 'reply_copied' : 'draft_copied')
+      onToast('copied')
       window.setTimeout(() => setCopied(null), 1500)
     } catch {
       window.prompt('Copy manually:', text)
       track(kind === 'reply' ? 'reply_copied' : 'draft_copied')
+      onToast('copied')
     }
   }
 
@@ -72,189 +76,161 @@ export default function Queue({
   }
 
   return (
-    <section className="space-y-6 sm:space-y-8">
-      <header className="space-y-1">
-        <h2 className="text-xl font-extrabold tracking-tight text-navy sm:text-2xl">
-          {xConnection.connected ? 'Post to X, or copy.' : 'Copy → paste into X.'}
-        </h2>
-        <p className="text-sm text-muted">
-          {approved.length === 0
-            ? 'Nothing ready yet — approve a draft first.'
-            : `${approved.length} ready to ship.`}
-          {xConnection.connected
-            ? ' Posts from your account. Radar still uses public posts.'
-            : ''}
-        </p>
-      </header>
+    <section>
+      <RadarFeed setup={setup} onToast={onToast} />
 
-      <div className="space-y-3">
-        {approved.length === 0 && (
-          <p className="rounded-[28px] border border-dashed border-line bg-card/60 px-4 py-6 text-center text-sm font-semibold text-muted">
-            No posts saved for later. Save a draft from Journal.
-          </p>
-        )}
-        {approved.map((d) => (
-          <article key={d.id} className="card-soft overflow-hidden border-orange/25">
-            <div className="break-words px-3 py-3 text-base font-semibold leading-relaxed whitespace-pre-wrap text-navy sm:px-4 sm:py-4 sm:text-sm">
-              {d.text}
-            </div>
-            <div className="flex flex-wrap gap-2 border-t border-line px-3 py-2.5 sm:px-4 sm:py-3">
-              <PostToX
-                text={d.text}
-                connected={xConnection.connected}
-                configured={xConnection.configured}
-                handle={xConnection.handle}
-                onConnect={() => void xConnection.connect()}
-                onPosted={() => {
-                  onMarkPosted(d.id)
-                  track('draft_marked_posted')
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => void copy(d.id, d.text, 'draft')}
-                className={
-                  xConnection.connected
-                    ? 'min-h-11 rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40'
-                    : 'btn-pill min-h-11 px-4 py-2.5 text-sm'
-                }
-              >
-                {copied === d.id ? 'Copied ✓' : 'Copy'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onMarkPosted(d.id)
-                  track('draft_marked_posted')
-                }}
-                className="min-h-11 rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40"
-              >
-                Mark posted
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
+      {approved.length > 0 && (
+        <div className="mt-8 max-w-[760px] space-y-3">
+          <p className="text-[11px] font-black tracking-[0.08em] text-muted">SAVED FOR LATER</p>
+          {approved.map((d) => (
+            <article key={d.id} className="card-soft overflow-hidden rounded-[22px]">
+              <div className="whitespace-pre-wrap break-words px-4 py-3.5 text-sm font-bold leading-relaxed text-navy">
+                {d.text}
+              </div>
+              <div className="flex flex-wrap gap-2 border-t border-line px-4 py-3">
+                <PostToX
+                  text={d.text}
+                  connected={xConnection.connected}
+                  configured={xConnection.configured}
+                  handle={xConnection.handle}
+                  compact
+                  onConnect={() => void xConnection.connect()}
+                  onPosted={() => {
+                    onMarkPosted(d.id)
+                    track('draft_marked_posted')
+                    onToast('posted')
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => void copy(d.id, d.text, 'draft')}
+                  className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy"
+                >
+                  {copied === d.id ? '✓ Copied' : 'Copy'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onMarkPosted(d.id)
+                    track('draft_marked_posted')
+                    onToast('posted')
+                  }}
+                  className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy"
+                >
+                  Mark posted
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
 
-      <div className="space-y-3 border-t border-line pt-6">
-        <RadarFeed setup={setup} />
-
-        {(todoReplies.length > 0 || showAdd) && (
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-            <p className="text-xs font-extrabold uppercase tracking-wider text-muted">Saved replies</p>
+      {(todoReplies.length > 0 || showAdd) && (
+        <div className="mt-8 max-w-[760px] space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11px] font-black tracking-[0.08em] text-muted">SAVED REPLIES</p>
             <button
               type="button"
               onClick={() => setShowAdd((v) => !v)}
-              className="min-h-9 rounded-full border border-line bg-card px-3 text-xs font-extrabold text-navy hover:border-orange/40"
+              className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-3 py-1.5 text-xs font-extrabold text-navy hover:border-navy"
             >
               {showAdd ? 'Cancel' : 'Add'}
             </button>
           </div>
-        )}
 
-        {showAdd && (
-          <form onSubmit={handleAdd} className="card-soft space-y-3 p-4 sm:p-5">
-            <div className="grid gap-3 sm:grid-cols-2">
+          {showAdd && (
+            <form onSubmit={handleAdd} className="card-soft space-y-3 rounded-[22px] p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  placeholder="@account"
+                  className="input-soft min-h-11 text-sm"
+                  required
+                />
+                <input
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://x.com/…"
+                  className="input-soft min-h-11 font-mono text-sm"
+                />
+              </div>
               <input
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
-                placeholder="@account"
-                className="input-soft min-h-11 text-sm"
+                value={postSummary}
+                onChange={(e) => setPostSummary(e.target.value)}
+                placeholder="What they posted (optional)"
+                className="input-soft min-h-11 w-full text-sm"
+              />
+              <textarea
+                value={suggestedReply}
+                onChange={(e) => setSuggestedReply(e.target.value)}
+                placeholder="Your reply…"
+                rows={3}
                 required
+                className="input-soft w-full resize-y text-sm leading-relaxed"
               />
-              <input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://x.com/…"
-                className="input-soft min-h-11 font-mono text-sm"
-              />
-            </div>
-            <input
-              value={postSummary}
-              onChange={(e) => setPostSummary(e.target.value)}
-              placeholder="What they posted (optional)"
-              className="input-soft min-h-11 w-full text-sm"
-            />
-            <textarea
-              value={suggestedReply}
-              onChange={(e) => setSuggestedReply(e.target.value)}
-              placeholder="Your reply…"
-              rows={3}
-              required
-              className="input-soft w-full resize-y text-base leading-relaxed sm:text-sm"
-            />
-            <button type="submit" className="btn-pill min-h-11 px-5 py-2.5 text-sm">
-              Save reply
-            </button>
-          </form>
-        )}
+              <button type="submit" className="btn-pill whitespace-nowrap px-5 py-2.5 text-sm">
+                Save reply
+              </button>
+            </form>
+          )}
 
-        {todoReplies.map((r) => {
-          const href = ensureHttps(r.url)
-          const replyToId = tweetIdFromUrl(r.url)
-          return (
-            <article key={r.id} className="card-soft overflow-hidden">
-              <div className="flex flex-wrap items-center gap-2 border-b border-line bg-cream-2/80 px-3 py-2 sm:px-4 sm:py-2.5">
-                <span className="font-extrabold text-orange">{r.account}</span>
-                {href && (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-auto inline-flex min-h-11 items-center text-sm font-bold text-muted hover:text-orange"
-                  >
-                    open ↗
-                  </a>
+          {todoReplies.map((r) => {
+            const href = ensureHttps(r.url)
+            const replyToId = tweetIdFromUrl(r.url)
+            return (
+              <article key={r.id} className="card-soft overflow-hidden rounded-[22px]">
+                <div className="flex flex-wrap items-center gap-2 border-b border-line bg-cream-2/80 px-4 py-2.5">
+                  <span className="font-extrabold text-orange">{r.account}</span>
+                  {href && (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-auto text-sm font-bold text-muted hover:text-orange"
+                    >
+                      open ↗
+                    </a>
+                  )}
+                </div>
+                {r.postSummary && (
+                  <p className="break-words px-4 pt-3 text-sm font-semibold text-muted">{r.postSummary}</p>
                 )}
-              </div>
-              {r.postSummary && (
-                <p className="break-words px-3 pt-2.5 text-sm font-semibold text-muted sm:px-4 sm:pt-3">
-                  {r.postSummary}
-                </p>
-              )}
-              <div className="break-words px-3 py-2.5 text-base font-semibold leading-relaxed whitespace-pre-wrap text-navy sm:px-4 sm:py-3 sm:text-sm">
-                {r.suggestedReply}
-              </div>
-              <div className="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2.5 sm:px-4 sm:py-3">
-                {replyToId ? (
-                  <a
-                    href={xReplyIntentUrl(replyToId, r.suggestedReply)}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => track('x_reply_intent', { handle: r.account })}
-                    className="btn-pill min-h-12 px-6 py-3 text-base"
+                <div className="whitespace-pre-wrap break-words px-4 py-3 text-sm font-bold leading-relaxed text-navy">
+                  {r.suggestedReply}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">
+                  {replyToId ? (
+                    <a
+                      href={xReplyIntentUrl(replyToId, r.suggestedReply)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => track('x_reply_intent', { handle: r.account })}
+                      className="btn-pill whitespace-nowrap px-[18px] py-[9px] text-[12.5px]"
+                    >
+                      Reply on X
+                    </a>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => void copy(r.id, r.suggestedReply, 'reply')}
+                    className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy"
                   >
-                    Reply on X
-                  </a>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => void copy(r.id, r.suggestedReply, 'reply')}
-                  className={
-                    replyToId
-                      ? 'min-h-11 rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40'
-                      : 'btn-pill min-h-11 px-4 py-2.5 text-sm'
-                  }
-                >
-                  {copied === r.id ? 'Copied ✓' : 'Copy reply'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onMarkReplied(r.id)}
-                  className="min-h-11 rounded-full border border-line bg-card px-4 py-2.5 text-sm font-extrabold text-navy hover:border-orange/40"
-                >
-                  Done
-                </button>
-                {replyToId ? (
-                  <p className="basis-full text-xs font-semibold text-muted">
-                    X blocks apps from sending replies. This opens X with your text ready.
-                  </p>
-                ) : null}
-              </div>
-            </article>
-          )
-        })}
-      </div>
+                    {copied === r.id ? '✓ Copied' : 'Copy reply'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMarkReplied(r.id)}
+                    className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy"
+                  >
+                    I posted it
+                  </button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
     </section>
   )
 }

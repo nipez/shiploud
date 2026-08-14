@@ -105,7 +105,7 @@ export default function BuilderSuggestions({
   }
 
   return (
-    <div className={mode === 'setup' ? 'space-y-3 border-t border-line pt-4' : 'space-y-3'}>
+    <div className={mode === 'setup' ? 'space-y-3 border-t border-line pt-4' : 'space-y-3.5'}>
       {mode === 'setup' && (
         <div className="space-y-0.5">
           <h3 className="text-sm font-extrabold text-navy">{title}</h3>
@@ -114,7 +114,7 @@ export default function BuilderSuggestions({
           </p>
         </div>
       )}
-      <ul className="grid gap-3 overflow-visible sm:grid-cols-2">
+      <ul className="grid gap-3.5 overflow-visible sm:grid-cols-2">
         {items.map((b) => (
           <SuggestionCard
             key={b.handle}
@@ -240,34 +240,31 @@ function SuggestionCard({
 
   return (
     <li
-      className={`relative flex flex-col overflow-visible rounded-2xl border border-line bg-card ${
-        tight ? 'gap-2.5 px-3 py-3' : 'gap-3 px-3.5 py-3.5'
+      className={`relative flex flex-col overflow-visible rounded-[22px] border border-line bg-card shadow-[0_8px_24px_rgba(43,27,77,.05)] ${
+        tight ? 'gap-2.5 px-[18px] py-4' : 'gap-3 px-3.5 py-3.5'
       } ${previewEnabled ? 'cursor-pointer' : ''}`}
       onClick={onCardClick}
     >
-      <div className="flex gap-3">
-        <Avatar name={name} src={avatar} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-extrabold leading-tight text-navy">{name}</p>
-          <p className="truncate font-mono text-[13px] font-semibold text-muted">{handle}</p>
-          <p className="mt-1 line-clamp-2 text-xs font-semibold leading-snug text-muted">{bio}</p>
-          {followers != null && (
-            <p className="mt-1 text-xs font-extrabold text-navy">
-              {formatFollowers(followers)}{' '}
-              <span className="font-semibold text-muted">followers</span>
-            </p>
-          )}
+      <div className="mb-[9px] flex items-center gap-[11px]">
+        <Avatar name={name} src={avatar} size={tight ? 40 : 48} />
+        <div className="flex min-w-0 flex-col">
+          <p className="truncate text-[14.5px] font-black leading-tight text-navy">{name}</p>
+          <p className="truncate text-xs font-bold text-muted">
+            {handle}
+            {followers != null ? ` · ${formatFollowers(followers)} followers` : ''}
+          </p>
         </div>
       </div>
+      <p className="mb-[13px] line-clamp-2 min-h-[37px] text-[12.5px] font-bold leading-normal text-muted">{bio}</p>
       <div className="mt-auto space-y-2.5" data-no-preview>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {onAdd &&
             (added ? (
               <span
-                className="inline-flex min-h-9 items-center rounded-full border border-line bg-cream-2 px-3.5 text-xs font-extrabold text-navy"
+                className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-sticker-mint bg-sticker-mint/25 px-[15px] py-[7px] text-xs font-black text-navy"
                 title="Their posts show in your ShipLoud feed"
               >
-                On your feed
+                ✓ In your feed
               </span>
             ) : (
               <AddToFeedButton onClick={() => onAdd(handle)} />
@@ -276,22 +273,10 @@ function SuggestionCard({
             href={xProfileUrl(item.handle)}
             target="_blank"
             rel="noreferrer"
-            className="text-xs font-extrabold text-muted hover:text-orange hover:underline"
+            className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-[15px] py-[7px] text-xs font-extrabold text-navy no-underline hover:border-navy"
           >
             Follow on X
           </a>
-          {previewEnabled && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                openSheet()
-              }}
-              className="text-xs font-extrabold text-orange hover:underline"
-            >
-              Preview posts
-            </button>
-          )}
         </div>
         {added && onSetTags && showTags !== false && (
           <BuilderTagPicker
@@ -409,16 +394,19 @@ function AddToFeedButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-function Avatar({ name, src }: { name: string; src: string }) {
+function Avatar({ name, src, size = 48 }: { name: string; src: string; size?: number }) {
   const [failed, setFailed] = useState(!src)
   useEffect(() => {
     setFailed(!src)
   }, [src])
   const letter = (name.replace(/^@+/, '').trim()[0] || '?').toUpperCase()
+  const colors = ['#FFE566', '#FF8FB8', '#7DFFB3', '#7EC8FF', '#C9A8FF']
+  const color = colors[letter.charCodeAt(0) % colors.length]
   if (failed) {
     return (
       <span
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-cream text-sm font-extrabold text-orange ring-1 ring-line"
+        className="flex shrink-0 items-center justify-center rounded-full border-2 border-navy font-black text-navy"
+        style={{ width: size, height: size, background: color, fontSize: size > 38 ? 16 : 15 }}
         aria-hidden
       >
         {letter}
@@ -429,11 +417,12 @@ function Avatar({ name, src }: { name: string; src: string }) {
     <img
       src={src}
       alt=""
-      width={48}
-      height={48}
+      width={size}
+      height={size}
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
-      className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-line"
+      className="shrink-0 rounded-full border-2 border-navy object-cover"
+      style={{ width: size, height: size }}
     />
   )
 }

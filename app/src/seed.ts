@@ -28,7 +28,7 @@ export const SEED: AppData = {
       id: 'journal-day1',
       date: DAY1,
       shipped: `ShipLoud landing to ${CANONICAL_SHIPLOUD_URL}`,
-      numbers: '~8 followers · $0 MRR · 1 product shipped (landing)',
+      numbers: '~9 followers · $0 MRR · 1 product shipped (landing)',
       blockerLesson:
         'X login blocked. Decision: dogfood before pitch — use the product ourselves first.',
       link: CANONICAL_SHIPLOUD_URL,
@@ -49,7 +49,7 @@ export const SEED: AppData = {
     },
     {
       id: 'draft-2',
-      text: "~8 followers · $0 MRR\n\nIdea → landing → live URL\nSame afternoon.\n\nPosting the receipt.",
+      text: "~9 followers · $0 MRR\n\nIdea → landing → live URL\nSame afternoon.\n\nPosting the receipt.",
       status: 'ready',
       source: 'seed',
       createdAt: `${DAY1}T18:02:00.000Z`,
@@ -79,7 +79,7 @@ export const SEED: AppData = {
     },
     {
       id: 'draft-5',
-      text: `Build log:\nShipLoud landing live\n~8 followers · $0 MRR\n\nShip → post → repeat.\n${CANONICAL_SHIPLOUD_URL}`,
+      text: `Build log:\nShipLoud landing live\n~9 followers · $0 MRR\n\nShip → post → repeat.\n${CANONICAL_SHIPLOUD_URL}`,
       status: 'idea',
       source: 'seed',
       createdAt: `${DAY1}T18:05:00.000Z`,
@@ -106,7 +106,7 @@ export const SEED: AppData = {
       postSummary: 'Short post about shipping ugly MVPs before polishing distribution.',
       url: 'https://x.com/marc_louv',
       suggestedReply:
-        'This. Landing live same afternoon. Followers still ~8, MRR $0, products shipped: 1. North star is shipped products, not vanity. Building ShipLoud so the posts match the shipping.',
+        'This. Landing live same afternoon. Followers still ~9, MRR $0, products shipped: 1. North star is shipped products, not vanity. Building ShipLoud so the posts match the shipping.',
       status: 'todo',
       createdAt: `${DAY1}T18:11:00.000Z`,
     },

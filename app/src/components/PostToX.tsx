@@ -16,6 +16,7 @@ type Props = {
   replyToId?: string
   replyToHandle?: string
   originalSnippet?: string
+  compact?: boolean
 }
 
 function snippet(text: string, max = 160): string {
@@ -37,6 +38,7 @@ export default function PostToX({
   replyToId,
   replyToHandle,
   originalSnippet,
+  compact = false,
 }: Props) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -142,7 +144,11 @@ export default function PostToX({
         type="button"
         onClick={openPreview}
         disabled={busy}
-        className="btn-pill min-h-12 px-6 py-3 text-base disabled:opacity-50"
+        className={
+          compact
+            ? 'btn-pill whitespace-nowrap px-[18px] py-[9px] text-[12.5px] disabled:opacity-50'
+            : 'btn-pill min-h-12 whitespace-nowrap px-6 py-3 text-base disabled:opacity-50'
+        }
         title={
           isReply
             ? theirHandle

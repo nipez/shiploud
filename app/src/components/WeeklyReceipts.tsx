@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Metrics } from '../types'
 import { normalizeHandle } from '../types'
 import { fetchEventsSummary, fetchXStats, refreshXStats, type XStatsResponse } from '../api'
 import { localEventCounts, track } from '../track'
 import { localRepliedCount7d } from '../replied'
+import { ScreenHead } from './ScreenHead'
 
 type Props = {
   metrics: Metrics
   xHandle: string
   onSaveMetrics: (metrics: Metrics) => void
+  standalone?: boolean
 }
 
 type Counts = {
@@ -32,12 +34,6 @@ function mergeCounts(remote: Record<string, number> | null, local: Record<string
     drafts_generated: src.drafts_generated ?? 0,
     replies_posted,
   }
-}
-
-function fmtDelta(d: number | null, label = '7d'): string | null {
-  if (d === null) return null
-  if (d === 0) return `±0 ${label}`
-  return d > 0 ? `+${d} ${label}` : `${d} ${label}`
 }
 
 function fmtWhen(iso: string | null | undefined): string {
@@ -72,7 +68,7 @@ function applyStatsToMetrics(metrics: Metrics, stats: XStatsResponse): Metrics {
   }
 }
 
-export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics }: Props) {
+export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standalone = false }: Props) {
   const [counts, setCounts] = useState<Counts>(() => mergeCounts(null, localEventCounts()))
   const [source, setSource] = useState<'cloud' | 'local'>('local')
   const [nowInput, setNowInput] = useState(
@@ -85,7 +81,6 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics }: Prop
   const [xStats, setXStats] = useState<XStatsResponse | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [xError, setXError] = useState('')
-  const [showManual, setShowManual] = useState(false)
 
   const handle = normalizeHandle(xHandle || '')
 
@@ -138,8 +133,6 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics }: Prop
   const lastChecked = xStats?.latest?.checked_at ?? metrics.followersNowAt
   const fetchSource = xStats?.latest?.source ?? xStats?.source
 
-  const deltaLabel = useMemo(() => fmtDelta(liveDelta, '7d'), [liveDelta])
-
   function parseNum(raw: string): number | null {
     const t = raw.trim()
     if (!t) return null
@@ -181,11 +174,9 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics }: Prop
         })
       } else {
         setXError(res.message || res.error || 'Could not refresh public profile.')
-        setShowManual(true)
       }
     } catch (e) {
       setXError(e instanceof Error ? e.message : 'Refresh failed')
-      setShowManual(true)
     } finally {
       setRefreshing(false)
     }
@@ -199,133 +190,113 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics }: Prop
     { label: 'Replies posted', value: counts.replies_posted },
   ]
 
+  const followerDisplay =
+    liveFollowers !== null && liveFollowers !== undefined ? liveFollowers.toLocaleString() : '—'
+  const deltaChip = liveDelta === null ? null : liveDelta > 0 ? `+${liveDelta}` : liveDelta === 0 ? '±0' : `${liveDelta}`
+
   return (
-    <section className="card-soft space-y-3 border-orange/20 p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-wide text-orange">
-            Receipts, not vibes
-          </p>
-          <h3 className="text-base font-extrabold text-navy sm:text-lg">This week</h3>
-        </div>
-        <span className="rounded-full border border-line bg-cream-2 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
-          {source === 'cloud' ? 'Last 7 days' : 'Local · last 7 days'}
-        </span>
+    <section>
+      {standalone && (
+        <ScreenHead
+          eyebrow="receipts, not vibes →"
+          title="This week"
+          sub={'Only what actually happened. No impressions, no engagement theater, no "we grew you 40%."'}
+          action={
+            <span className="whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-3 py-[3px] text-[11px] font-black tracking-[0.06em] text-muted">
+              LAST 7 DAYS
+            </span>
+          }
+        />
+      )}
+
+      <div className="card-soft mb-[18px] rounded-3xl p-[22px]">
+        {!standalone && (
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-wide text-orange">Receipts, not vibes</p>
+              <h3 className="text-base font-extrabold text-navy sm:text-lg">This week</h3>
+            </div>
+            <span className="rounded-full border border-line bg-cream-2 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-muted">
+              {source === 'cloud' ? 'Last 7 days' : 'Local · last 7 days'}
+            </span>
+          </div>
+        )}
+        <ul className="mb-3.5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {rows.map((r) => (
+            <li key={r.label} className="rounded-2xl border border-line bg-cream-2 px-3.5 py-3.5 text-center">
+              <p className="text-[26px] font-black leading-none tabular-nums text-navy">{r.value}</p>
+              <p className="mt-1 text-[11px] font-extrabold leading-snug text-muted">{r.label}</p>
+            </li>
+          ))}
+        </ul>
+        <p className="text-xs font-bold text-muted">
+          Replies posted counts "I posted it" on the radar — not View post, not copy. Honor system.
+        </p>
       </div>
 
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-        {rows.map((r) => (
-          <li
-            key={r.label}
-            className="rounded-2xl border border-line bg-cream-2/80 px-2.5 py-2 text-center"
-          >
-            <p className="text-lg font-black tabular-nums text-navy">{r.value}</p>
-            <p className="text-[10px] font-extrabold leading-tight text-muted">{r.label}</p>
-          </li>
-        ))}
-      </ul>
-      <p className="text-[11px] font-semibold text-muted">
-        Replies posted is I posted it on the feed — not View post or copy.
-      </p>
-
-      <div className="space-y-2 border-t border-line pt-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-sm font-extrabold text-navy">Followers</p>
-          {deltaLabel && <p className="text-xs font-black text-orange-deep">{deltaLabel}</p>}
-        </div>
-        <p className="text-xs font-semibold text-muted">
-          From your public X profile. Not impressions/engagement.
+      <div className="card-soft rounded-3xl p-[22px]">
+        <div className="mb-3.5 flex flex-wrap items-center gap-2">
+          <p className="text-[11px] font-black tracking-[0.08em] text-muted">FOLLOWERS</p>
           {handle ? (
-            <>
-              {' '}
-              · <span className="font-extrabold text-navy">{handle}</span>
-            </>
+            <span className="rounded-full border-[1.5px] border-line bg-cream-2 px-2.5 py-0.5 text-[11px] font-extrabold text-muted">
+              {handle}
+            </span>
           ) : (
-            <> · set handle in Setup</>
+            <span className="text-[11px] font-bold text-muted">set handle in Setup</span>
           )}
-        </p>
-
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[7rem]">
-            <p className="text-[10px] font-black uppercase tracking-wide text-muted">Now</p>
-            <p className="text-2xl font-black tabular-nums text-navy">
-              {liveFollowers !== null && liveFollowers !== undefined
-                ? liveFollowers.toLocaleString()
-                : '—'}
-            </p>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-black uppercase tracking-wide text-muted">
-              Last checked
-            </p>
-            <p className="text-xs font-semibold text-navy">{fmtWhen(lastChecked)}</p>
-            {fetchSource && (
-              <p className="text-[10px] font-semibold text-muted">via {fetchSource}</p>
-            )}
-          </div>
+          <span className="flex-1" />
           <button
             type="button"
             onClick={() => void handleRefresh()}
             disabled={refreshing || !handle}
-            className="min-h-11 rounded-full border border-line bg-card px-4 text-sm font-extrabold text-navy hover:border-orange/40 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-2 text-[12.5px] font-extrabold text-navy hover:border-navy disabled:opacity-50"
           >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
+              <path d="M21 12a9 9 0 1 1-2.6-6.3" />
+              <path d="M21 3v6h-6" />
+            </svg>
             {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
 
-        {xError && <p className="text-sm font-extrabold text-red-600">{xError}</p>}
-
-        <button
-          type="button"
-          onClick={() => setShowManual((v) => !v)}
-          className="text-xs font-extrabold text-muted underline-offset-2 hover:text-navy hover:underline"
-        >
-          {showManual ? 'Hide manual override' : 'Manual override (backup)'}
-        </button>
-
-        {showManual && (
-          <div className="space-y-2 rounded-2xl border border-line bg-cream-2/60 p-3">
-            <p className="text-xs font-semibold text-muted">
-              Use if public fetch fails. Same fields as before.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <label className="min-w-[7.5rem] flex-1 space-y-1">
-                <span className="block text-[10px] font-black uppercase tracking-wide text-muted">
-                  Week start
-                </span>
-                <input
-                  inputMode="numeric"
-                  value={startInput}
-                  onChange={(e) => setStartInput(e.target.value)}
-                  placeholder="e.g. 8"
-                  className="input-soft min-h-11 w-full text-base tabular-nums sm:text-sm"
-                />
-              </label>
-              <label className="min-w-[7.5rem] flex-1 space-y-1">
-                <span className="block text-[10px] font-black uppercase tracking-wide text-muted">
-                  Followers now
-                </span>
-                <input
-                  inputMode="numeric"
-                  value={nowInput}
-                  onChange={(e) => setNowInput(e.target.value)}
-                  placeholder="e.g. 12"
-                  className="input-soft min-h-11 w-full text-base tabular-nums sm:text-sm"
-                />
-              </label>
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={handleSaveFollowers}
-                  className="min-h-11 rounded-full border border-line bg-card px-4 text-sm font-extrabold text-navy hover:border-orange/40"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-            {savedFlash && <p className="text-sm font-extrabold text-orange">Logged.</p>}
+        <div className="mb-3.5 flex flex-wrap items-center gap-[18px]">
+          <span className="text-[44px] font-black leading-none tabular-nums text-navy">{followerDisplay}</span>
+          {deltaChip && (
+            <span className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-sticker-mint bg-sticker-mint/30 px-3 py-1 text-[12.5px] font-black">
+              {deltaChip} · 7d
+            </span>
+          )}
+          <div className="flex min-w-0 flex-col">
+            <span className="text-[10.5px] font-black tracking-[0.08em] text-muted">LAST CHECKED</span>
+            <span className="text-[13px] font-extrabold text-navy">
+              {fmtWhen(lastChecked)}{' '}
+              <span className="font-bold text-muted">
+                · via {fetchSource || 'fxtwitter'} · public profile, not X analytics
+              </span>
+            </span>
           </div>
-        )}
+        </div>
+
+        {xError && <p className="mb-3 text-sm font-extrabold text-red-600">{xError}</p>}
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="whitespace-nowrap text-xs font-extrabold text-muted">Manual override (backup)</span>
+          <input
+            inputMode="numeric"
+            value={nowInput}
+            onChange={(e) => setNowInput(e.target.value)}
+            placeholder="e.g. 12"
+            className="input-soft w-[100px] rounded-full px-4 py-2 text-[12.5px] font-bold tabular-nums"
+          />
+          <button
+            type="button"
+            onClick={handleSaveFollowers}
+            className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-2 text-[12.5px] font-extrabold text-navy hover:border-navy"
+          >
+            Save
+          </button>
+          {savedFlash && <p className="text-sm font-extrabold text-orange">Logged.</p>}
+        </div>
       </div>
     </section>
   )
