@@ -17,6 +17,7 @@ type Props = {
   onSetActiveProject: (projectId: string) => void
   onDismissSetupBanner: () => void
   onSaveMetrics: (metrics: Metrics) => void
+  children?: ReactNode
 }
 
 export default function Today({
@@ -30,6 +31,7 @@ export default function Today({
   onSetActiveProject,
   onDismissSetupBanner,
   onSaveMetrics,
+  children,
 }: Props) {
   const today = todayISO()
   const existing = journals.find((j) => j.date === today) ?? journals[0]
@@ -81,103 +83,54 @@ export default function Today({
     onGeneratedDrafts(drafts)
     track('drafts_generated', { source: meta.source, count: meta.count })
     const tag = meta.source === 'ai' ? 'AI' : 'template'
-    setGenFlash(`Made ${meta.count} ${tag} options — pick your favorite on Posts.`)
+    setGenFlash(`Made ${meta.count} ${tag} options — pick one below.`)
     window.setTimeout(() => setGenFlash(''), 2800)
   }
 
-  const building = project?.building.trim() ?? ''
-  const who = project?.who.trim() ?? ''
-  const goal = project?.goal.trim() ?? ''
-  const url = project?.url?.trim() ?? ''
-
   return (
     <section className="space-y-6">
-      {isSetupEmpty(setup) ? (
-        showSetupBanner && (
-          <div className="relative overflow-hidden rounded-[28px] border-2 border-orange/45 bg-gradient-to-br from-orange/20 via-orange/10 to-cream-2 p-4 shadow-[0_10px_24px_rgba(255,106,43,0.18)] sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+      {isSetupEmpty(setup) && showSetupBanner && (
+        <div className="relative overflow-hidden rounded-[28px] border-2 border-orange/45 bg-gradient-to-br from-orange/20 via-orange/10 to-cream-2 p-4 shadow-[0_10px_24px_rgba(255,106,43,0.18)] sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <button
+              type="button"
+              onClick={onOpenSetup}
+              className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left"
+            >
+              <span className="inline-flex items-center rounded-full bg-orange px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-white">
+                Setup needed
+              </span>
+              <span className="text-lg font-extrabold leading-snug text-orange-deep sm:text-xl">
+                Add what you’re building →
+              </span>
+              <span className="text-sm font-semibold text-navy/80">
+                Tell ShipLoud your project, audience, and voice so drafts match you.
+              </span>
+            </button>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={onOpenSetup}
-                className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left"
+                className="btn-pill min-h-11 px-5 py-2.5 text-sm"
               >
-                <span className="inline-flex items-center rounded-full bg-orange px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-white">
-                  Setup needed
-                </span>
-                <span className="text-lg font-extrabold leading-snug text-orange-deep sm:text-xl">
-                  Add what you’re building →
-                </span>
-                <span className="text-sm font-semibold text-navy/80">
-                  Tell ShipLoud your project, audience, and voice so drafts match you.
-                </span>
+                Open Setup
               </button>
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onOpenSetup}
-                  className="btn-pill min-h-11 px-5 py-2.5 text-sm"
-                >
-                  Open Setup
-                </button>
-                <button
-                  type="button"
-                  onClick={onDismissSetupBanner}
-                  className="min-h-11 rounded-full border border-line bg-card px-3 text-xs font-extrabold text-muted hover:text-navy"
-                  aria-label="Dismiss"
-                >
-                  Dismiss
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={onDismissSetupBanner}
+                className="min-h-11 rounded-full border border-line bg-card px-3 text-xs font-extrabold text-muted hover:text-navy"
+                aria-label="Dismiss"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
-        )
-      ) : (
-        <button
-          type="button"
-          onClick={onOpenSetup}
-          className="group flex w-full items-start gap-3 rounded-[24px] border border-line bg-card px-3.5 py-3 text-left shadow-sm transition hover:border-orange/40 hover:shadow-[0_8px_20px_rgba(43,27,77,0.08)] sm:px-4 sm:py-3.5"
-          aria-label="Open setup"
-        >
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-orange/25 bg-orange/10 text-orange-deep">
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden>
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-black uppercase tracking-wide text-orange">
-                Setup
-              </span>
-              {project && (
-                <span className="inline-flex items-center rounded-full border border-line bg-cream-2 px-2.5 py-0.5 text-xs font-extrabold text-navy">
-                  {project.name}
-                </span>
-              )}
-            </span>
-            <span className="mt-1 block truncate text-sm font-extrabold text-navy group-hover:text-orange-deep">
-              {building || who || goal || 'Your founder context'}
-            </span>
-            {(who || goal) && building && (
-              <span className="mt-0.5 block truncate text-xs font-semibold text-muted">
-                {[who, goal].filter(Boolean).join(' · ')}
-              </span>
-            )}
-            {url && (
-              <span className="mt-0.5 block truncate text-xs font-medium text-muted/80">
-                {url.replace(/^https?:\/\//i, '')}
-              </span>
-            )}
-          </span>
-          <span className="mt-1 shrink-0 text-sm font-extrabold text-orange group-hover:underline">
-            Edit →
-          </span>
-        </button>
+        </div>
       )}
 
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          {project && isSetupEmpty(setup) && (
+          {project && (
             <span className="inline-flex items-center rounded-full border border-line bg-card px-2.5 py-1 text-xs font-extrabold text-navy shadow-sm">
               {project.name}
             </span>
@@ -203,7 +156,7 @@ export default function Today({
           What did you ship today?
         </h2>
         <p className="text-sm text-muted">
-          <span className="font-bold text-navy">{today}</span> · jot it down, then make drafts.
+          <span className="font-bold text-navy">{today}</span> · jot it down, then pick a draft below.
         </p>
       </header>
 
@@ -262,6 +215,8 @@ export default function Today({
         {savedFlash && <p className="text-sm font-extrabold text-orange">Saved.</p>}
         {genFlash && <p className="text-sm font-extrabold text-orange">{genFlash}</p>}
       </div>
+
+      {children}
 
       <WeeklyReceipts metrics={metrics} xHandle={project?.xHandle ?? ''} onSaveMetrics={onSaveMetrics} />
 

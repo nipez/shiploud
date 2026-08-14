@@ -15,11 +15,10 @@ import Login from './components/Login'
 import EarlySticker from './components/EarlySticker'
 import { CANONICAL_SHIPLOUD_URL } from './url'
 
-type Tab = 'journal' | 'posts' | 'feed' | 'follows'
+type Tab = 'journal' | 'feed' | 'follows'
 
 const TABS: { id: Tab; label: string; shortLabel: string }[] = [
   { id: 'journal', label: 'Journal', shortLabel: 'Journal' },
-  { id: 'posts', label: 'Posts', shortLabel: 'Posts' },
   { id: 'feed', label: 'Feed', shortLabel: 'Feed' },
   { id: 'follows', label: 'Suggested follows', shortLabel: 'Follows' },
 ]
@@ -27,17 +26,19 @@ const TABS: { id: Tab; label: string; shortLabel: string }[] = [
 /** Old hashes keep working; parseHash maps them to the new tab ids. */
 const HASH_ALIASES: Record<string, Tab> = {
   today: 'journal',
-  drafts: 'posts',
+  drafts: 'journal',
+  posts: 'journal',
   queue: 'feed',
   radar: 'feed',
   replies: 'feed',
   journal: 'journal',
-  posts: 'posts',
   feed: 'feed',
   follows: 'follows',
   suggestions: 'follows',
   builders: 'follows',
 }
+
+const DRAFTS_HASHES = new Set(['drafts', 'posts'])
 
 const BANNER_KEY = 'shiploud-setup-banner-dismissed'
 
@@ -86,13 +87,6 @@ function TabIcon({ id }: { id: Tab }) {
           <path d="M16 2v4M8 2v4M3 10h18" />
         </svg>
       )
-    case 'posts':
-      return (
-        <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-        </svg>
-      )
     case 'feed':
       return (
         <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -110,11 +104,17 @@ function TabIcon({ id }: { id: Tab }) {
   }
 }
 
-function parseHash(): { tab: Tab; setup: boolean } {
+function parseHash(): { tab: Tab; setup: boolean; focusDrafts: boolean } {
   const hash = window.location.hash.replace('#', '')
-  if (hash === 'setup') return { tab: 'journal', setup: true }
-  if (hash in HASH_ALIASES) return { tab: HASH_ALIASES[hash], setup: false }
-  return { tab: 'journal', setup: false }
+  if (hash === 'setup') return { tab: 'journal', setup: true, focusDrafts: false }
+  if (hash in HASH_ALIASES) {
+    return { tab: HASH_ALIASES[hash], setup: false, focusDrafts: DRAFTS_HASHES.has(hash) }
+  }
+  return { tab: 'journal', setup: false, focusDrafts: false }
+}
+
+function scrollToDrafts() {
+  document.getElementById('drafts')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 export default function App() {
@@ -151,6 +151,7 @@ export default function App() {
     }
   })
   const menuRef = useRef<HTMLDivElement>(null)
+  const scrollDraftsRef = useRef(initial.focusDrafts)
 
   useEffect(() => {
     window.location.hash = showSetup ? 'setup' : tab
@@ -161,10 +162,19 @@ export default function App() {
       const next = parseHash()
       setShowSetup(next.setup)
       if (!next.setup) setTab(next.tab)
+      if (next.focusDrafts) scrollDraftsRef.current = true
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  useEffect(() => {
+    if (!data || showSetup || tab !== 'journal') return
+    if (!scrollDraftsRef.current) return
+    scrollDraftsRef.current = false
+    const id = window.setTimeout(scrollToDrafts, 50)
+    return () => window.clearTimeout(id)
+  }, [data, showSetup, tab])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -283,7 +293,8 @@ export default function App() {
     // Replace pending for active project — don't append onto old long essays.
     clearPendingAndPrepend(drafts, store.setup.activeProjectId, true)
     setShowSetup(false)
-    setTab('posts')
+    setTab('journal')
+    scrollDraftsRef.current = true
   }
 
   function updateDraft(id: string, patch: Partial<Draft>) {
@@ -387,7 +398,7 @@ export default function App() {
 
   function badgeFor(t: Tab): number | null {
     if (t === 'feed') return approvedCount
-    if (t === 'posts') return draftsOpen
+    if (t === 'journal') return draftsOpen
     return null
   }
 
@@ -735,18 +746,18 @@ export default function App() {
                 onSetActiveProject={setActiveProject}
                 onDismissSetupBanner={dismissBanner}
                 onSaveMetrics={(metrics) => persist({ ...store, metrics })}
-              />
-            )}
-            {tab === 'posts' && (
-              <Drafts
-                drafts={data.drafts}
-                journals={data.journals}
-                setup={data.setup}
-                onUpdate={updateDraft}
-                onDelete={deleteDraft}
-                onRegen={regenDrafts}
-                xConnection={xConnection}
-              />
+              >
+                <Drafts
+                  drafts={data.drafts}
+                  journals={data.journals}
+                  setup={data.setup}
+                  onUpdate={updateDraft}
+                  onDelete={deleteDraft}
+                  onRegen={regenDrafts}
+                  xConnection={xConnection}
+                  embedded
+                />
+              </Today>
             )}
             {tab === 'feed' && (
               <Queue
@@ -818,7 +829,7 @@ export default function App() {
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           aria-label="Primary"
         >
-          <div className="mx-auto grid max-w-3xl grid-cols-4">
+          <div className="mx-auto grid max-w-3xl grid-cols-3">
             {TABS.map((t) => {
               const active = tab === t.id
               const badge = badgeFor(t.id)

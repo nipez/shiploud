@@ -18,6 +18,7 @@ type Props = {
   onDelete: (id: string) => void
   onRegen: (nextDrafts: Draft[], clearPendingForProjectId?: string) => void
   xConnection: XConnectionState
+  embedded?: boolean
 }
 
 const PREVIEW_CHARS = 220
@@ -30,6 +31,7 @@ export default function Drafts({
   onDelete,
   onRegen,
   xConnection,
+  embedded = false,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -75,7 +77,7 @@ export default function Drafts({
 
   async function runRegen(): Promise<boolean> {
     if (!latestJournal) {
-      setFlash('Add a journal entry on Journal first.')
+      setFlash(embedded ? 'Jot what you shipped above first.' : 'Add a journal entry on Journal first.')
       setLengthFailBanner(false)
       setRegenerating(false)
       window.setTimeout(() => setFlash(''), 2400)
@@ -151,25 +153,37 @@ export default function Drafts({
   const showMakingShort = regenerating || (options.length === 0 && Boolean(latestJournal) && !lengthFailBanner)
 
   return (
-    <section className="space-y-5">
+    <section id="drafts" className="scroll-mt-24 space-y-5">
       <header className="space-y-2">
-        <h2 className="text-xl font-extrabold tracking-tight text-navy sm:text-2xl">
+        <h2
+          className={
+            embedded
+              ? 'text-lg font-extrabold tracking-tight text-navy sm:text-xl'
+              : 'text-xl font-extrabold tracking-tight text-navy sm:text-2xl'
+          }
+        >
           {showMakingShort
             ? 'Making short options…'
             : totalOptions > 0
-              ? `Here are ${totalOptions} options — pick your favorite`
-              : 'Here are your options — pick your favorite'}
+              ? embedded
+                ? `Pick a draft · ${totalOptions} options`
+                : `Here are ${totalOptions} options — pick your favorite`
+              : embedded
+                ? 'Pick a draft'
+                : 'Here are your options — pick your favorite'}
         </h2>
         <p className="text-sm font-semibold text-muted">
           {xConnection.connected
             ? 'Post from your account, or copy. Only drafts that fit one X post.'
             : 'Copy and paste into X (or wherever you post). Only drafts that fit one X post.'}
         </p>
-        <p className="rounded-2xl border border-orange/25 bg-orange/10 px-3 py-2 text-sm font-semibold text-navy">
-          {xConnection.connected
-            ? 'Post to X ships from your account. Radar still uses public posts.'
-            : 'Big orange Copy is the move. Connect X to post from here. Radar still uses public posts.'}
-        </p>
+        {!embedded && (
+          <p className="rounded-2xl border border-orange/25 bg-orange/10 px-3 py-2 text-sm font-semibold text-navy">
+            {xConnection.connected
+              ? 'Post to X ships from your account. Radar still uses public posts.'
+              : 'Big orange Copy is the move. Connect X to post from here. Radar still uses public posts.'}
+          </p>
+        )}
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -360,7 +374,9 @@ export default function Drafts({
                 <p className="text-sm font-semibold text-muted">
                   {latestJournal
                     ? 'Hit Regen for short options — then pick your favorite and copy it.'
-                    : 'Make some from Journal — then pick your favorite and copy it into X.'}
+                    : embedded
+                      ? 'Jot what you shipped above, then make drafts.'
+                      : 'Make some from Journal — then pick your favorite and copy it into X.'}
                 </p>
                 <button
                   type="button"

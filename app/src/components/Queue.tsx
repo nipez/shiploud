@@ -90,7 +90,7 @@ export default function Queue({
       <div className="space-y-3">
         {approved.length === 0 && (
           <p className="rounded-[28px] border border-dashed border-line bg-card/60 px-4 py-6 text-center text-sm font-semibold text-muted">
-            No posts saved for later. Save something from Posts.
+            No posts saved for later. Save a draft from Journal.
           </p>
         )}
         {approved.map((d) => (
