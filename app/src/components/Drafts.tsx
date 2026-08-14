@@ -136,9 +136,9 @@ export default function Drafts({
   const showMakingShort = regenerating || (options.length === 0 && Boolean(latestJournal) && !lengthFailBanner)
 
   return (
-    <div id="drafts" className="flex min-w-0 flex-col gap-3">
+    <div id="drafts" className="flex min-w-0 flex-col justify-start gap-3">
       <div className="flex flex-wrap items-center gap-2.5">
-        <h2 className="whitespace-nowrap text-[19px] font-black text-navy">Pick a draft</h2>
+        <h2 className="leading-none whitespace-nowrap text-[19px] font-black text-navy">Pick a draft</h2>
         <span className="whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-2.5 py-[3px] text-[11.5px] font-extrabold text-muted">
           {options.length} options · fit one post
         </span>

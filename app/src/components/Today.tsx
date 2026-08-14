@@ -82,9 +82,9 @@ export default function Today({
         sub="Jot it down, pick a draft, tap Post. Two minutes, then back to building."
       />
 
-      <div className="flex flex-col items-start gap-[22px] min-[1000px]:flex-row min-[1000px]:flex-wrap">
+      <div className="grid items-start gap-[22px] min-[1000px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
         <form
-          className="card-soft flex w-full flex-col gap-3.5 rounded-3xl p-[22px] min-[1000px]:max-w-[420px] min-[1000px]:flex-[1_1_340px]"
+          className="card-soft flex w-full flex-col gap-3.5 rounded-3xl p-[22px]"
           onSubmit={(e) => {
             e.preventDefault()
             handleSave()
@@ -144,7 +144,7 @@ export default function Today({
           <p className="text-[11.5px] font-bold text-muted">Empty journal = empty drafts. That's the deal.</p>
         </form>
 
-        <div className="w-full min-w-0 min-[1000px]:flex-[1_1_420px]">{children}</div>
+        <div className="min-w-0 self-start">{children}</div>
       </div>
     </section>
   )
