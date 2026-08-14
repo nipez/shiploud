@@ -8,6 +8,7 @@ import {
   handleOAuthStart,
   handleXPost,
 } from './xAuth'
+import { loadInsights } from './insights'
 export interface Env {
   DB: D1Database
   AI?: Ai
@@ -1167,6 +1168,16 @@ export default {
           created_at: r.created_at,
         }))
         return json({ emails, count: emails.length }, 200, origin)
+      }
+
+      if (path === '/api/admin/insights' && request.method === 'GET') {
+        const auth = await requireAuth(request, env)
+        if (auth instanceof Response) return auth
+        if (!isAdminRole(auth.role)) {
+          return json({ error: 'forbidden' }, 403, origin)
+        }
+        const insights = await loadInsights(env.DB, url.searchParams.get('range'))
+        return json(insights, 200, origin)
       }
 
       if (path === '/api/waitlist/count' && request.method === 'GET') {

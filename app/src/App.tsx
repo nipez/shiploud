@@ -512,7 +512,7 @@ export default function App() {
                       onClick={() => setMenuOpen(false)}
                       className="block w-full px-4 py-2.5 text-left text-sm font-extrabold text-navy hover:bg-cream-2"
                     >
-                      Waitlist
+                      Insights
                     </a>
                   )}
                   {apiConfigured && (
