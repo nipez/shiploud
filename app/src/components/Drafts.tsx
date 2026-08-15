@@ -136,43 +136,47 @@ export default function Drafts({
   const showMakingShort = regenerating || (options.length === 0 && Boolean(latestJournal) && !lengthFailBanner)
 
   return (
-    <div id="drafts" className="flex min-w-0 flex-col justify-start gap-3">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <h2 className="leading-none whitespace-nowrap text-[19px] font-black text-navy">Pick a draft</h2>
-        <span className="whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-2.5 py-[3px] text-[11.5px] font-extrabold text-muted">
-          {options.length} options · fit one post
-        </span>
-        <span className="flex-1" />
-        <button
-          type="button"
-          onClick={handleRegen}
-          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
-            <path d="M21 12a9 9 0 1 1-2.6-6.3" />
-            <path d="M21 3v6h-6" />
-          </svg>
-          Regen short drafts
-        </button>
-      </div>
-      <p className="-mt-1 text-[12.5px] font-bold text-muted">
-        Post from your account, or copy. Nothing posts itself.
-      </p>
-
-      {!xConnection.connected && (
-        <div className="rounded-2xl border-[1.5px] border-dashed border-sticker-yellow bg-cream-2 px-4 py-3 text-[12.5px] font-extrabold text-navy">
-          X isn't connected. Copy still works —{' '}
+    <>
+      <header className="order-3 mb-0 min-w-0 min-[1000px]:order-2 min-[1000px]:col-start-2 min-[1000px]:self-end">
+        <p className="mb-1.5 font-script text-2xl font-bold text-orange">pick a draft →</p>
+        <div className="mb-1.5 flex flex-wrap items-end gap-3">
+          <h2 className="text-[31px] font-black tracking-[-0.02em] text-navy">Pick a draft</h2>
+          <span className="whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-2.5 py-[3px] text-[11.5px] font-extrabold text-muted">
+            {options.length} options · fit one post
+          </span>
+          <span className="flex-1" />
           <button
             type="button"
-            onClick={onOpenSetup}
-            className="font-black text-orange underline underline-offset-2 hover:text-orange-deep"
+            onClick={handleRegen}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy"
           >
-            connect in Setup
-          </button>{' '}
-          to Post to X.
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
+              <path d="M21 12a9 9 0 1 1-2.6-6.3" />
+              <path d="M21 3v6h-6" />
+            </svg>
+            Regen short drafts
+          </button>
         </div>
-      )}
+        <p className="text-sm font-bold text-muted">
+          Post from your account, or copy. Nothing posts itself.
+          {!xConnection.connected && (
+            <>
+              {' '}
+              X isn&apos;t connected —{' '}
+              <button
+                type="button"
+                onClick={onOpenSetup}
+                className="font-black text-orange underline underline-offset-2 hover:text-orange-deep"
+              >
+                connect in Setup
+              </button>{' '}
+              to Post to X.
+            </>
+          )}
+        </p>
+      </header>
 
+      <div id="drafts" className="order-4 flex min-w-0 flex-col gap-3 min-[1000px]:col-start-2">
       {lengthFailBanner && (
         <div role="alert" className="rounded-2xl border-2 border-red-400 bg-red-50 px-3 py-3 text-sm font-extrabold text-red-700">
           Regen failed length check — try again.
@@ -290,6 +294,7 @@ export default function Drafts({
           See receipts →
         </button>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

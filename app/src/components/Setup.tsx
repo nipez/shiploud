@@ -157,8 +157,11 @@ export default function Setup({ setup, onSave, onBack, xConnection, onSetActiveP
           followers: res.latest.followers,
           source: res.source || res.latest.source,
         })
+        const grew = res.delta7 != null && res.delta7 > 0
         setCheckMsg(
-          `${res.latest.followers.toLocaleString()} followers · via ${res.source || res.latest.source}`,
+          grew
+            ? `${res.latest.followers.toLocaleString()} followers · +${res.delta7} in 7d. Nice — logged on Receipts.`
+            : `${res.latest.followers.toLocaleString()} followers · via ${res.source || res.latest.source}`,
         )
       } else {
         setCheckMsg(res.message || res.error || 'Fetch failed — try again later.')

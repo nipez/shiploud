@@ -562,9 +562,11 @@ export default function App() {
             <Today
               journals={data.journals}
               setup={data.setup}
+              metrics={data.metrics}
               onSave={saveJournal}
               onGeneratedDrafts={addDrafts}
               onSetActiveProject={setActiveProject}
+              onSaveMetrics={(metrics) => persist({ ...store, metrics })}
               onToast={showToast}
             >
               <Drafts

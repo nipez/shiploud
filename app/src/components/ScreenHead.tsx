@@ -5,14 +5,16 @@ export function ScreenHead({
   title,
   sub,
   action,
+  className = '',
 }: {
   eyebrow: string
   title: string
   sub: string
   action?: ReactNode
+  className?: string
 }) {
   return (
-    <header className="mb-6">
+    <header className={className || 'mb-6'}>
       <p className="mb-1.5 font-script text-2xl font-bold text-orange">{eyebrow}</p>
       <div className="mb-1.5 flex flex-wrap items-end gap-3">
         <h1 className="text-[31px] font-black tracking-[-0.02em] text-navy">{title}</h1>

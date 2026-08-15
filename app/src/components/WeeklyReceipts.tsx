@@ -266,6 +266,11 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
               {deltaChip} · 7d
             </span>
           )}
+          {liveDelta != null && liveDelta > 0 && (
+            <p className="text-sm font-extrabold text-navy">
+              +{liveDelta} since the last weekly snapshot. Real ones — nice.
+            </p>
+          )}
           <div className="flex min-w-0 flex-col">
             <span className="text-[10.5px] font-black tracking-[0.08em] text-muted">LAST CHECKED</span>
             <span className="text-[13px] font-extrabold text-navy">
