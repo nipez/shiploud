@@ -318,7 +318,8 @@ function normalizeAiTexts(items: unknown[], productUrl: string): string[] {
 }
 
 export function templateDrafts(journal: GenerateJournal, project: GenerateProject): string[] {
-  const shippedRaw = str(journal.shipped, 600) || 'something small'
+  const shippedRaw = str(journal.shipped, 600)
+  if (!shippedRaw) return []
   const productLink = resolveProductLink(str(project.url, 200), str(journal.link, 200), shippedRaw)
   const shipLine =
     firstFact(shippedRaw, 64) || stripUrlsLine(shippedRaw).slice(0, 64) || 'something small'
@@ -392,6 +393,9 @@ export async function generateDrafts(
   journal: GenerateJournal,
   project: GenerateProject,
 ): Promise<GenerateResult> {
+  if (!str(journal.shipped, 600)) {
+    return { drafts: [], source: 'template' }
+  }
   if (ai && typeof ai.run === 'function') {
     try {
       const texts = await generateWithAi(ai, journal, project)

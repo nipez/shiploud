@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Draft, JournalEntry, Setup } from '../types'
 import { activeProject } from '../types'
 import { generateDraftsSmart } from '../generateSmart'
+import type { DraftShape } from '../generate'
 import { GENERATOR_MARKER, isShortEnough, xLength, X_LIMIT } from '../generate'
 import { track } from '../track'
 import PostToX from './PostToX'
@@ -72,17 +73,17 @@ export default function Drafts({
     [journals],
   )
 
-  async function runRegen(): Promise<boolean> {
-    if (!latestJournal) {
+  async function runRegen(shape: DraftShape | 'all' = 'all'): Promise<boolean> {
+    if (!latestJournal?.shipped.trim()) {
       setLengthFailBanner(false)
       setRegenerating(false)
       return false
     }
     setRegenerating(true)
-    const { drafts: fresh, meta } = await generateDraftsSmart(latestJournal, setup)
+    const { drafts: fresh, meta } = await generateDraftsSmart(latestJournal, setup, shape)
     onRegen(fresh, project?.id)
     const usable = fresh.filter((d) => isShortEnough(d.text))
-    track('drafts_generated', { source: meta.source, count: usable.length })
+    track('drafts_generated', { source: meta.source, count: usable.length, shape })
     setRegenerating(false)
     if (usable.length > 0) {
       setLengthFailBanner(false)
@@ -94,13 +95,18 @@ export default function Drafts({
 
   function handleRegen() {
     autoRegenTried.current = true
-    void runRegen()
+    void runRegen('all')
+  }
+
+  function handleShape(shape: DraftShape) {
+    autoRegenTried.current = true
+    void runRegen(shape)
   }
 
   useEffect(() => {
     if (autoRegenTried.current) return
     if (options.length > 0) return
-    if (!latestJournal) return
+    if (!latestJournal?.shipped.trim()) return
     if (pendingAll.length === 0 || pendingAll.every((d) => !isShortEnough(d.text))) {
       autoRegenTried.current = true
       void runRegen()
@@ -133,7 +139,8 @@ export default function Drafts({
     window.setTimeout(() => setSavedId(null), 1400)
   }
 
-  const showMakingShort = regenerating || (options.length === 0 && Boolean(latestJournal) && !lengthFailBanner)
+  const showMakingShort =
+    regenerating || (options.length === 0 && Boolean(latestJournal?.shipped.trim()) && !lengthFailBanner)
 
   return (
     <>
@@ -158,7 +165,7 @@ export default function Drafts({
           </button>
         </div>
         <p className="text-sm font-bold text-muted">
-          Post from your account, or copy. Nothing posts itself.
+          Shapes from the journal — not viral templates. Post from your account, or copy. Nothing posts itself.
           {!xConnection.connected && (
             <>
               {' '}
@@ -177,6 +184,26 @@ export default function Drafts({
       </header>
 
       <div id="drafts" className="order-4 flex min-w-0 flex-col gap-3 min-[1000px]:col-start-2">
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Draft shape from journal">
+        <span className="mr-1 text-[11px] font-extrabold uppercase tracking-wide text-muted">Write it as</span>
+        {(
+          [
+            ['receipt', 'Receipt'],
+            ['lesson', 'Lesson'],
+            ['straight', 'Straight'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => handleShape(id)}
+            disabled={regenerating || !latestJournal?.shipped.trim()}
+            className="inline-flex min-h-8 items-center rounded-full border-[1.5px] border-line bg-cream-2 px-3 text-[12px] font-extrabold text-navy hover:border-navy disabled:opacity-50"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       {lengthFailBanner && (
         <div role="alert" className="rounded-2xl border-2 border-red-400 bg-red-50 px-3 py-3 text-sm font-extrabold text-red-700">
           Regen failed length check — try again.

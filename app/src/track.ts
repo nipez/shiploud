@@ -41,6 +41,25 @@ function bumpLocal(name: TrackEventName, props?: TrackProps): void {
   }
 }
 
+/** Count one event name since local midnight. */
+export function localEventToday(name: TrackEventName): number {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY)
+    const list: LocalBucket[] = raw ? (JSON.parse(raw) as LocalBucket[]) : []
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    const cutoff = start.getTime()
+    let n = 0
+    for (const e of list) {
+      if (e.t < cutoff || e.name !== name) continue
+      n += typeof e.n === 'number' ? e.n : 1
+    }
+    return n
+  } catch {
+    return 0
+  }
+}
+
 /** Local last-7-days counts (fire-and-forget mirror of track). */
 export function localEventCounts(): Record<string, number> {
   try {

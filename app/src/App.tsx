@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Draft, JournalEntry, ReplyTarget, Setup as SetupType } from './types'
 import { activeProject, dropHandleTags, normalizeHandle, setHandleTags } from './types'
-import { resetData } from './storage'
+import { resetData, todayISO } from './storage'
 import { generateDraftsFromJournal, isShortEnough } from './generate'
 import { useCloudSync } from './useCloudSync'
 import { createInvite, isAdminRole } from './api'
 import { useXConnection } from './useXConnection'
-import { localEventCounts } from './track'
+import { localEventCounts, localEventToday } from './track'
+import { localRepliedToday } from './replied'
 import Today from './components/Today'
 import Drafts from './components/Drafts'
 import Queue from './components/Queue'
@@ -212,7 +213,7 @@ export default function App() {
         .slice()
         .sort((a, b) => b.date.localeCompare(a.date) || b.updatedAt.localeCompare(a.updatedAt))[0] ??
       null
-    if (!journal) {
+    if (!journal?.shipped.trim()) {
       autoShortRef.current = true
       return
     }
@@ -399,6 +400,12 @@ export default function App() {
 
   const weekCounts = localEventCounts()
   const weekLine = `${weekCounts.drafts_generated || draftsOpen} drafts · ${weekCounts.draft_marked_posted || 0} posted · ${weekCounts.x_replied || 0} replies marked`
+  const todayKey = todayISO()
+  const postedToday =
+    store.drafts.some((d) => d.status === 'posted' && d.updatedAt.slice(0, 10) === todayKey) ||
+    localEventToday('x_posted') > 0 ||
+    localEventToday('draft_marked_posted') > 0
+  const repliedToday = localRepliedToday() || localEventToday('x_replied') > 0
   const todayLabel = new Date().toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
@@ -568,6 +575,9 @@ export default function App() {
               onSetActiveProject={setActiveProject}
               onSaveMetrics={(metrics) => persist({ ...store, metrics })}
               onToast={showToast}
+              postedToday={postedToday}
+              repliedToday={repliedToday}
+              onSeeRadar={() => setTab('radar')}
             >
               <Drafts
                 drafts={data.drafts}

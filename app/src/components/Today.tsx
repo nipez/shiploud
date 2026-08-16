@@ -16,6 +16,9 @@ type Props = {
   onSetActiveProject: (projectId: string) => void
   onSaveMetrics: (metrics: Metrics) => void
   onToast: (msg: string) => void
+  postedToday: boolean
+  repliedToday: boolean
+  onSeeRadar: () => void
   children?: ReactNode
 }
 
@@ -45,6 +48,9 @@ export default function Today({
   onSetActiveProject,
   onSaveMetrics,
   onToast,
+  postedToday,
+  repliedToday,
+  onSeeRadar,
   children,
 }: Props) {
   const today = todayISO()
@@ -171,6 +177,20 @@ export default function Today({
 
   return (
     <section>
+      <div className="mb-6 flex flex-wrap items-center gap-2 rounded-[18px] border border-line bg-cream-2 px-4 py-3">
+        <span className="text-[11px] font-extrabold uppercase tracking-wide text-muted">Today</span>
+        <HabitChip done={postedToday} yes="Posted the ship" no="Ship not posted yet" />
+        <HabitChip done={repliedToday} yes="Replied to a builder" no="No reply marked yet" />
+        {!repliedToday && (
+          <button
+            type="button"
+            onClick={onSeeRadar}
+            className="ml-auto text-[12.5px] font-black text-orange hover:text-orange-deep"
+          >
+            Reply radar →
+          </button>
+        )}
+      </div>
       <div className="grid items-start gap-x-[22px] gap-y-6 min-[1000px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
         <ScreenHead
           className="order-1 mb-0 min-[1000px]:col-start-1 min-[1000px]:self-end"
@@ -289,6 +309,18 @@ export default function Today({
         </form>
       </div>
     </section>
+  )
+}
+
+function HabitChip({ done, yes, no }: { done: boolean; yes: string; no: string }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border-[1.5px] px-3 py-1 text-[12px] font-extrabold ${
+        done ? 'border-sticker-mint bg-sticker-mint/30 text-navy' : 'border-line bg-card text-muted'
+      }`}
+    >
+      {done ? `✓ ${yes}` : no}
+    </span>
   )
 }
 

@@ -1,7 +1,12 @@
 import type { Draft, JournalEntry, Setup } from './types'
 import { activeProject } from './types'
 import { generateDraftsRemote, getToken, hasApi } from './api'
-import { draftsFromTexts, generateDraftsFromJournal, isShortEnough } from './generate'
+import {
+  draftsFromTexts,
+  generateDraftsFromJournal,
+  isShortEnough,
+  type DraftShape,
+} from './generate'
 
 export type GenerateMeta = { source: 'ai' | 'template'; count: number }
 
@@ -11,8 +16,16 @@ export type GenerateMeta = { source: 'ai' | 'template'; count: number }
 export async function generateDraftsSmart(
   journal: JournalEntry,
   setup?: Setup | null,
+  shape: DraftShape | 'all' = 'all',
 ): Promise<{ drafts: Draft[]; meta: GenerateMeta }> {
+  if (!journal.shipped.trim()) {
+    return { drafts: [], meta: { source: 'template', count: 0 } }
+  }
   const project = setup ? activeProject(setup) : undefined
+  if (shape !== 'all') {
+    const local = generateDraftsFromJournal(journal, setup, shape).filter((d) => isShortEnough(d.text))
+    return { drafts: local, meta: { source: 'template', count: local.length } }
+  }
   if (hasApi() && getToken()) {
     try {
       const remote = await generateDraftsRemote({

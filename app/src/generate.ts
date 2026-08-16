@@ -241,7 +241,16 @@ export function draftsFromTexts(
  * Setup is silent tone guidance only — never pasted into the body.
  * Product URL at most once per draft; never invent URLs.
  */
-export function generateDraftsFromJournal(journal: JournalEntry, setup?: Setup | null): Draft[] {
+export type DraftShape = 'receipt' | 'lesson' | 'straight'
+
+/** Turn today's journal into short-receipt drafts. Empty ship note = no drafts. */
+export function generateDraftsFromJournal(
+  journal: JournalEntry,
+  setup?: Setup | null,
+  shape: DraftShape | 'all' = 'all',
+): Draft[] {
+  if (!journal.shipped.trim()) return []
+
   const now = new Date().toISOString()
   const project = setup ? activeProject(setup) : undefined
   const tag = {
@@ -250,7 +259,7 @@ export function generateDraftsFromJournal(journal: JournalEntry, setup?: Setup |
   }
 
   const shippedRaw = rewritePagesDevUrls(
-    journal.shipped.trim() || 'something small',
+    journal.shipped.trim(),
     (project?.url ?? '').trim() || CANONICAL_SHIPLOUD_URL,
   )
   const journalLink = journal.link.trim()
@@ -269,55 +278,84 @@ export function generateDraftsFromJournal(journal: JournalEntry, setup?: Setup |
   const metric = pickNumber(journal.numbers.trim())
   const lesson = shortLesson(journal.blockerLesson.trim())
 
-  const drafts = [
+  const receipt = [
     makeDraft(
-      punch(['Shipped today.', shipLine, '', 'Not waiting for perfect.'], productLink, true),
+      punch([metric || null, shipLine, '', 'Posting the receipt.'], productLink, false),
       now,
       tag,
       productLink,
+      'Receipt',
     ),
     makeDraft(
-      punch([metric || 'Day 1.', shipLine, '', 'Posting the receipt.'], productLink, false),
+      punch([shipLine, metric || 'Day 1.'], productLink, false),
       now,
       tag,
       productLink,
+      'Receipt',
     ),
+    makeDraft(
+      punch(['Build log:', shipLine, metric || null], productLink, true),
+      now,
+      tag,
+      productLink,
+      'Receipt',
+    ),
+  ]
+  const lessonDrafts = [
     makeDraft(
       punch([lesson || 'Kept moving.', '', shipLine], productLink, true),
       now,
       tag,
       productLink,
+      'Lesson',
     ),
     makeDraft(
-      punch([shipLine, metric || 'Building in public.'], productLink, false),
+      punch([shipLine, '', lesson || 'Noted the blocker. Kept going.'], productLink, false),
       now,
       tag,
       productLink,
+      'Lesson',
     ),
     makeDraft(
-      punch(['Build log:', shipLine, metric || null, 'Ship → post → repeat.'], productLink, true),
+      punch([lesson || 'Lesson logged.', metric || null, shipLine], productLink, true),
       now,
       tag,
       productLink,
-    ),
-    makeDraft(
-      punch(
-        [
-          'Thread starter 🧵',
-          shipLine,
-          metric || null,
-          'Bio said build in public.',
-          'Feed now matches.',
-        ],
-        productLink,
-        Boolean(productLink),
-      ),
-      now,
-      tag,
-      productLink,
-      'Thread starter',
+      'Lesson',
     ),
   ]
+  const straight = [
+    makeDraft(
+      punch(['Shipped today.', shipLine, '', 'Not waiting for perfect.'], productLink, true),
+      now,
+      tag,
+      productLink,
+      'Straight',
+    ),
+    makeDraft(
+      punch([shipLine, '', 'Live. That’s the post.'], productLink, true),
+      now,
+      tag,
+      productLink,
+      'Straight',
+    ),
+    makeDraft(
+      punch([shipLine, metric || null], productLink, true),
+      now,
+      tag,
+      productLink,
+      'Straight',
+    ),
+  ]
+
+  const drafts =
+    shape === 'receipt'
+      ? receipt
+      : shape === 'lesson'
+        ? lessonDrafts
+        : shape === 'straight'
+          ? straight
+          : [straight[0], receipt[0], lessonDrafts[0], receipt[1], straight[1], receipt[2]]
 
   // Final safety: force every draft under hard cap (should already be).
   return drafts.map((d) =>

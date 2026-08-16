@@ -53,6 +53,7 @@ export default function App() {
               ['#gap', 'The gap'],
               ['#how', 'How it works'],
               ['#inside', 'Inside'],
+              ['#on-x', 'On X'],
               ['#pricing', 'Pricing'],
             ].map(([href, label]) => (
               <a
@@ -77,8 +78,8 @@ export default function App() {
             Turn today's ship notes into <span className="text-orange">X posts people actually follow.</span>
           </h1>
           <p className="mb-[26px] max-w-[520px] text-lg font-bold leading-[1.55] text-muted text-pretty">
-            Journal what you built. Pick a short draft that sounds like you. Post to X from the app, or copy. Nothing
-            goes out without your tap.
+            You shipped it. Then you said nothing. Journal the ship, pick a short draft, post it yourself. Two minutes —
+            then back to building.
           </p>
           <WaitlistForm id="hero-waitlist" source="marketing-hero" />
           <p className="mt-3.5 text-[13px] font-bold text-muted">
@@ -116,7 +117,7 @@ export default function App() {
             <p className="mb-0.5 text-[11px] font-extrabold text-muted">What shipped</p>
             <p className="mb-2.5 text-sm font-extrabold leading-snug">ShipLoud landing live at getshiploud.com</p>
             <p className="mb-0.5 text-[11px] font-extrabold text-muted">Numbers</p>
-            <p className="mb-2.5 text-sm font-extrabold leading-snug">~9 followers · $0 MRR · 1 product shipped</p>
+            <p className="mb-2.5 text-sm font-extrabold leading-snug">11 followers · $0 MRR · 1 product shipped</p>
             <p className="mb-0.5 text-[11px] font-extrabold text-muted">Blocker / lesson</p>
             <p className="text-sm font-extrabold leading-snug">X login blocked. Decision: dogfood before pitch.</p>
           </div>
@@ -151,27 +152,27 @@ getshiploud.com`}
 
       <section id="gap" className="mx-auto max-w-[1160px] px-6 py-14">
         <p className="mb-2 font-script text-[26px] font-bold text-orange">the problem →</p>
-        <h2 className="mb-[34px] max-w-[640px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
-          Bio says build in public.
+        <h2 className="mb-[34px] max-w-[720px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
+          I shipped it and said nothing.
           <br />
-          Feed is Cursor questions.
+          The log is still in Notes.
         </h2>
         <div className="mb-[22px] grid gap-[18px] md:grid-cols-3">
           {[
             {
               n: '01',
               title: 'You ship… quietly',
-              body: '0–1K followers. You ask good questions. You reply to every SaaS launch. Your own ship log is still in Notes.',
+              body: 'The feature is live. The tweet is not. 0–1K followers. You reply to every launch. Your own receipt is still in Notes.',
             },
             {
               n: '02',
               title: 'The feed gap',
-              body: 'Your timeline is tool replies and "how I grew to 10K" threads you\'ll never rewrite in your voice.',
+              body: 'Your timeline is tool replies and "how I grew to 10K" threads you will never rewrite in your voice.',
             },
             {
               n: '03',
               title: 'What actually compounds',
-              body: 'The accounts you admire post boring, concrete updates. Numbers, screenshots, day 12. And quietly grow.',
+              body: 'The accounts you admire post boring, concrete updates. Numbers, a URL, day 12. Then they reply to one builder. That is the habit.',
             },
           ].map((c) => (
             <div key={c.n} className="card-soft rounded-[26px] p-6">
@@ -275,7 +276,7 @@ getshiploud.com`}
                   <p className="text-base font-black text-[#FFFDF8]">What actually shipped</p>
                   {[
                     'ShipLoud landing live at getshiploud.com',
-                    '~9 followers · $0 MRR · 1 product shipped',
+                    '11 followers · $0 MRR · 1 product shipped',
                     'X login blocked. Decision: dogfood before pitch.',
                   ].map((line) => (
                     <div
@@ -332,7 +333,7 @@ getshiploud.com`}
                   </div>
                   <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-[11px] opacity-65">
                     <p className="whitespace-pre-line text-[12.5px] font-bold leading-normal">
-                      {`~9 followers · $0 MRR
+                      {`11 followers · $0 MRR
 ShipLoud landing
 
 Posting the receipt.`}
@@ -392,6 +393,37 @@ Posting the receipt.`}
           Approve-first, always. Originals post through the official X API when you connect. Replies are yours: ShipLoud
           opens X with your text ready.
         </p>
+      </section>
+
+      <section id="on-x" className="mx-auto max-w-[1160px] px-6 py-14">
+        <p className="mb-2 font-script text-[26px] font-bold text-orange">on X →</p>
+        <h2 className="mb-2.5 text-[40px] font-black leading-[1.12] tracking-[-0.02em]">Real posts. Not a wall of strangers.</h2>
+        <p className="mb-[30px] max-w-[560px] text-[15.5px] font-bold text-muted">
+          From @dreamandbuildit — 11 followers, $0 MRR. The same loop the product is for.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[
+            {
+              text: 'Shipped ShipLoud. Write what you shipped, pick a draft, post it yourself.\n\nNo auto-post. No fake dashboards.\n\n11 followers · $0 MRR',
+            },
+            {
+              text: 'X is telling me I have 1200 post impressions in the past 7 days. Not sure I believe it… but it also corresponds to the same time I launched and started using getshiploud.com… just saying.',
+            },
+          ].map((p) => (
+            <article key={p.text} className="card-soft rounded-[26px] p-6 text-left">
+              <p className="mb-3 text-[12.5px] font-black text-orange">@dreamandbuildit</p>
+              <p className="mb-5 whitespace-pre-line text-[15px] font-extrabold leading-[1.5] text-navy">{p.text}</p>
+              <a
+                href="https://x.com/dreamandbuildit"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[13px] font-black text-orange no-underline hover:text-orange-deep"
+              >
+                See on X →
+              </a>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section id="pricing" className="mx-auto max-w-[1160px] px-6 pb-20 pt-16 text-center">

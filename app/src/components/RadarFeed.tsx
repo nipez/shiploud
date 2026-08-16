@@ -11,6 +11,7 @@ import { track } from '../track'
 import { xReplyIntentUrl } from '../url'
 import { loadRepliedMap, markReplied, unmarkReplied, type RepliedMark } from '../replied'
 import { ScreenHead } from './ScreenHead'
+import { RADAR_INTENTS, tweetMatchesIntent, type RadarIntent } from '../radarIntent'
 
 const LAST_KEY = 'shiploud-radar-last-v6'
 
@@ -165,6 +166,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
   const [generating, setGenerating] = useState<Set<string>>(() => new Set())
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('all')
+  const [intent, setIntent] = useState<RadarIntent>('all')
   const [replied, setReplied] = useState<Record<string, RepliedMark>>(() => loadRepliedMap())
   const [awaitingConfirm, setAwaitingConfirm] = useState<Record<string, boolean>>({})
   const inFlight = useRef(0)
@@ -387,9 +389,10 @@ export default function RadarFeed({ setup, onToast }: Props) {
         if (!handleHasTag(tags, item.handle, category)) return false
       }
       if (q && !(item.text || '').toLowerCase().includes(q)) return false
+      if (!tweetMatchesIntent(item.text || '', intent)) return false
       return true
     })
-  }, [items, query, category, tags])
+  }, [items, query, category, tags, intent])
 
   useEffect(() => {
     if (category === 'all') return
@@ -449,6 +452,8 @@ export default function RadarFeed({ setup, onToast }: Props) {
         onQuery={setQuery}
         category={category}
         onCategory={setCategory}
+        intent={intent}
+        onIntent={setIntent}
         tags={categoryChips}
         showUncategorized={showUncategorized}
       />
@@ -616,6 +621,8 @@ export default function RadarFeed({ setup, onToast }: Props) {
           <p className="rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-6 text-sm font-bold text-muted">
             {query.trim()
               ? `No posts mentioning “${query.trim()}”.`
+              : intent !== 'all'
+                ? `No ${intent} posts in this feed right now.`
               : category === 'uncategorized'
                 ? 'No posts from uncategorized people.'
                 : category !== 'all'
@@ -761,6 +768,8 @@ function FeedFilters({
   onQuery,
   category,
   onCategory,
+  intent,
+  onIntent,
   tags,
   showUncategorized,
 }: {
@@ -768,16 +777,40 @@ function FeedFilters({
   onQuery: (q: string) => void
   category: string
   onCategory: (c: string) => void
+  intent: RadarIntent
+  onIntent: (c: RadarIntent) => void
   tags: string[]
   showUncategorized: boolean
 }) {
-  const chips: Array<{ id: string; label: string }> = [{ id: 'all', label: 'All' }]
+  const chips: Array<{ id: string; label: string }> = [{ id: 'all', label: 'All people' }]
   for (const t of tags) chips.push({ id: t, label: t })
   if (showUncategorized) chips.push({ id: 'uncategorized', label: 'Uncategorized' })
 
   return (
     <div className="mb-3.5 max-w-[760px] space-y-2">
-      <p className="text-sm font-semibold text-muted">Filter people, or search what they posted.</p>
+      <p className="text-sm font-semibold text-muted">
+        Jump on launches, numbers, blockers, or asks. You still write the reply.
+      </p>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by post intent">
+        {RADAR_INTENTS.map((c) => {
+          const on = intent === c.id
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onIntent(c.id)}
+              aria-pressed={on}
+              className={
+                on
+                  ? 'inline-flex min-h-8 items-center rounded-full bg-orange px-3 text-xs font-extrabold text-white'
+                  : 'inline-flex min-h-8 items-center rounded-full border border-line bg-card px-3 text-xs font-extrabold text-navy hover:border-orange/40'
+              }
+            >
+              {c.label}
+            </button>
+          )
+        })}
+      </div>
       <label className="block">
         <span className="sr-only">Posts mentioning</span>
         <input
@@ -790,7 +823,7 @@ function FeedFilters({
           spellCheck={false}
         />
       </label>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by category">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by people">
         {chips.map((c) => {
           const on = category === c.id
           return (
@@ -801,7 +834,7 @@ function FeedFilters({
               aria-pressed={on}
               className={
                 on
-                  ? 'inline-flex min-h-8 items-center rounded-full bg-orange px-3 text-xs font-extrabold text-white'
+                  ? 'inline-flex min-h-8 items-center rounded-full bg-navy px-3 text-xs font-extrabold text-white'
                   : 'inline-flex min-h-8 items-center rounded-full border border-line bg-card px-3 text-xs font-extrabold text-navy hover:border-orange/40'
               }
             >
