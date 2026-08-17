@@ -63,6 +63,8 @@ export type Metrics = {
   followersNowAt: string | null
   followersWeekStart: number | null
   followersWeekStartAt: string | null
+  /** Optional launch baseline if the first public check missed day one. */
+  followersLaunch: number | null
 }
 
 export type AppData = {
@@ -79,6 +81,7 @@ export function emptyMetrics(): Metrics {
     followersNowAt: null,
     followersWeekStart: null,
     followersWeekStartAt: null,
+    followersLaunch: null,
   }
 }
 

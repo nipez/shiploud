@@ -4,8 +4,10 @@ import { activeProject, normalizeHandle } from '../types'
 import { todayISO, uid } from '../storage'
 import { generateDraftsSmart } from '../generateSmart'
 import { fetchXStats, refreshXStats, type XStatsResponse } from '../api'
+import { formatDelta, growthFromStats } from '../followerGrowth'
 import { track } from '../track'
 import { ScreenHead } from './ScreenHead'
+import FollowerChart from './FollowerChart'
 
 type Props = {
   journals: JournalEntry[]
@@ -30,13 +32,8 @@ function applyStatsToMetrics(metrics: Metrics, stats: XStatsResponse): Metrics {
     followersNowAt: at,
     followersWeekStart: stats.weekStart?.followers ?? metrics.followersWeekStart,
     followersWeekStartAt: stats.weekStart?.checked_at ?? metrics.followersWeekStartAt,
+    followersLaunch: metrics.followersLaunch,
   }
-}
-
-function previousFollowers(stats: XStatsResponse): number | null {
-  const hist = stats.history ?? []
-  if (hist.length >= 2) return hist[hist.length - 2]?.followers ?? null
-  return stats.weekStart?.followers ?? null
 }
 
 export default function Today({
@@ -154,10 +151,9 @@ export default function Today({
     track('drafts_generated', { source: meta.source, count: meta.count })
   }
 
-  const liveFollowers = xStats?.latest?.followers ?? metrics.followersNow
-  const prevFollowers = xStats ? previousFollowers(xStats) : metrics.followersWeekStart
-  const followerDelta =
-    liveFollowers != null && prevFollowers != null ? liveFollowers - prevFollowers : xStats?.delta7 ?? null
+  const growth = growthFromStats(xStats, metrics.followersLaunch)
+  const liveFollowers = growth.latest ?? metrics.followersNow
+  const followerDelta = growth.delta
   const numbersFollowers = numbers.match(/~?(\d+)\s*followers/i)
   const numbersMismatch =
     liveFollowers != null &&
@@ -207,11 +203,7 @@ export default function Today({
                 }`}
               >
                 {liveFollowers.toLocaleString()} followers
-                {followerDelta != null && followerDelta > 0
-                  ? ` · +${followerDelta}`
-                  : followerDelta != null && followerDelta < 0
-                    ? ` · ${followerDelta}`
-                    : ''}
+                {formatDelta(followerDelta) ? ` · ${formatDelta(followerDelta)}` : ''}
               </span>
             ) : null
           }
@@ -243,34 +235,38 @@ export default function Today({
             />
           </Field>
           {liveFollowers != null && (
-            <p className="text-[12px] font-bold text-muted">
-              {followerDelta != null && followerDelta > 0 ? (
-                <>
-                  Public check: {liveFollowers.toLocaleString()} followers · +{followerDelta} since
-                  the last snapshot. Real ones — nice.
-                </>
-              ) : (
-                <>
-                  Public check: {liveFollowers.toLocaleString()} followers
-                  {xStats?.latest?.checked_at
-                    ? ` · ${new Date(xStats.latest.checked_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
-                    : ''}
-                  . Logged on Receipts, not typed here.
-                </>
-              )}
-              {numbersMismatch && (
-                <>
-                  {' '}
-                  <button
-                    type="button"
-                    onClick={useLiveFollowersInNumbers}
-                    className="font-black text-orange underline underline-offset-2 hover:text-orange-deep"
-                  >
-                    Use {liveFollowers} in Numbers
-                  </button>
-                </>
-              )}
-            </p>
+            <div className="space-y-2">
+              <p className="text-[12px] font-bold text-muted">
+                {followerDelta != null && growth.first != null ? (
+                  <>
+                    Public check: {liveFollowers.toLocaleString()} followers · {formatDelta(followerDelta)}{' '}
+                    since the first check ({growth.first.toLocaleString()}
+                    {growth.firstAt
+                      ? ` · ${new Date(growth.firstAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                      : ''}
+                    ). Cumulative, not last ping.
+                  </>
+                ) : (
+                  <>
+                    Public check: {liveFollowers.toLocaleString()} followers. Logged on Receipts, not
+                    typed here.
+                  </>
+                )}
+                {numbersMismatch && (
+                  <>
+                    {' '}
+                    <button
+                      type="button"
+                      onClick={useLiveFollowersInNumbers}
+                      className="font-black text-orange underline underline-offset-2 hover:text-orange-deep"
+                    >
+                      Use {liveFollowers} in Numbers
+                    </button>
+                  </>
+                )}
+              </p>
+              {growth.points.length > 0 && <FollowerChart points={growth.points} compact />}
+            </div>
           )}
           <Field label="Blocker / lesson" hint="What got in the way.">
             <textarea

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import type { Metrics } from '../types'
 import { normalizeHandle } from '../types'
 import { fetchEventsSummary, fetchXStats, refreshXStats, type XStatsResponse } from '../api'
+import { formatDelta, growthFromStats } from '../followerGrowth'
+import FollowerChart from './FollowerChart'
 import { localEventCounts, track } from '../track'
 import { localRepliedCount7d } from '../replied'
 import { ScreenHead } from './ScreenHead'
@@ -65,6 +67,7 @@ function applyStatsToMetrics(metrics: Metrics, stats: XStatsResponse): Metrics {
     followersNowAt: at,
     followersWeekStart: weekStart,
     followersWeekStartAt: weekStartAt,
+    followersLaunch: metrics.followersLaunch,
   }
 }
 
@@ -77,6 +80,9 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
   const [startInput, setStartInput] = useState(
     metrics.followersWeekStart !== null ? String(metrics.followersWeekStart) : '',
   )
+  const [launchInput, setLaunchInput] = useState(
+    metrics.followersLaunch !== null ? String(metrics.followersLaunch) : '',
+  )
   const [savedFlash, setSavedFlash] = useState(false)
   const [xStats, setXStats] = useState<XStatsResponse | null>(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -87,6 +93,7 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
   useEffect(() => {
     setNowInput(metrics.followersNow !== null ? String(metrics.followersNow) : '')
     setStartInput(metrics.followersWeekStart !== null ? String(metrics.followersWeekStart) : '')
+    setLaunchInput(metrics.followersLaunch !== null ? String(metrics.followersLaunch) : '')
   }, [metrics])
 
   useEffect(() => {
@@ -124,12 +131,10 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handle])
 
-  const liveFollowers = xStats?.latest?.followers ?? metrics.followersNow
-  const liveDelta =
-    xStats?.delta7 ??
-    (metrics.followersNow !== null && metrics.followersWeekStart !== null
-      ? metrics.followersNow - metrics.followersWeekStart
-      : null)
+  const growth = growthFromStats(xStats, metrics.followersLaunch)
+  const liveFollowers = growth.latest ?? metrics.followersNow
+  const liveDelta = growth.delta
+  const weekDelta = xStats?.delta7 ?? null
   const lastChecked = xStats?.latest?.checked_at ?? metrics.followersNowAt
   const fetchSource = xStats?.latest?.source ?? xStats?.source
 
@@ -150,6 +155,7 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
       followersNowAt: now !== null ? at : metrics.followersNowAt,
       followersWeekStart: start,
       followersWeekStartAt: start !== null ? at : metrics.followersWeekStartAt,
+      followersLaunch: parseNum(launchInput),
     })
     setSavedFlash(true)
     window.setTimeout(() => setSavedFlash(false), 1400)
@@ -192,7 +198,8 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
 
   const followerDisplay =
     liveFollowers !== null && liveFollowers !== undefined ? liveFollowers.toLocaleString() : '—'
-  const deltaChip = liveDelta === null ? null : liveDelta > 0 ? `+${liveDelta}` : liveDelta === 0 ? '±0' : `${liveDelta}`
+  const deltaChip = formatDelta(liveDelta) || null
+  const weekChip = formatDelta(weekDelta) || null
 
   return (
     <section>
@@ -263,13 +270,14 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
           <span className="text-[44px] font-black leading-none tabular-nums text-navy">{followerDisplay}</span>
           {deltaChip && (
             <span className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-sticker-mint bg-sticker-mint/30 px-3 py-1 text-[12.5px] font-black">
-              {deltaChip} · 7d
+              {deltaChip} since first check
+              {growth.first != null ? ` (${growth.first.toLocaleString()})` : ''}
             </span>
           )}
-          {liveDelta != null && liveDelta > 0 && (
-            <p className="text-sm font-extrabold text-navy">
-              +{liveDelta} since the last weekly snapshot. Real ones — nice.
-            </p>
+          {weekChip && (
+            <span className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-3 py-1 text-[12.5px] font-black text-muted">
+              {weekChip} · 7d
+            </span>
           )}
           <div className="flex min-w-0 flex-col">
             <span className="text-[10.5px] font-black tracking-[0.08em] text-muted">LAST CHECKED</span>
@@ -282,16 +290,29 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
           </div>
         </div>
 
+        <div className="mb-4 rounded-2xl border border-line bg-cream-2 px-3.5 py-3">
+          <p className="mb-2 text-[10.5px] font-black tracking-[0.08em] text-muted">SINCE LAUNCH</p>
+          <FollowerChart points={growth.points} />
+        </div>
+
         {xError && <p className="mb-3 text-sm font-extrabold text-red-600">{xError}</p>}
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="whitespace-nowrap text-xs font-extrabold text-muted">Manual override (backup)</span>
+          <span className="whitespace-nowrap text-xs font-extrabold text-muted">Started at</span>
+          <input
+            inputMode="numeric"
+            value={launchInput}
+            onChange={(e) => setLaunchInput(e.target.value)}
+            placeholder="e.g. 6"
+            className="input-soft w-[88px] rounded-full px-4 py-2 text-[12.5px] font-bold tabular-nums"
+          />
+          <span className="whitespace-nowrap text-xs font-extrabold text-muted">Now</span>
           <input
             inputMode="numeric"
             value={nowInput}
             onChange={(e) => setNowInput(e.target.value)}
-            placeholder="e.g. 12"
-            className="input-soft w-[100px] rounded-full px-4 py-2 text-[12.5px] font-bold tabular-nums"
+            placeholder="e.g. 13"
+            className="input-soft w-[88px] rounded-full px-4 py-2 text-[12.5px] font-bold tabular-nums"
           />
           <button
             type="button"
@@ -302,6 +323,9 @@ export default function WeeklyReceipts({ metrics, xHandle, onSaveMetrics, standa
           </button>
           {savedFlash && <p className="text-sm font-extrabold text-orange">Logged.</p>}
         </div>
+        <p className="mt-2 text-[11px] font-bold text-muted">
+          Started at is only if the first public check missed day one. Leave blank to use the first snapshot.
+        </p>
       </div>
     </section>
   )

@@ -279,6 +279,7 @@ function normalizeMetrics(raw: unknown): Metrics {
     followersNowAt: ts(m.followersNowAt),
     followersWeekStart: num(m.followersWeekStart),
     followersWeekStartAt: ts(m.followersWeekStartAt),
+    followersLaunch: num(m.followersLaunch),
   }
 }
 

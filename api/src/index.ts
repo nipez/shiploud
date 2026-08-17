@@ -634,23 +634,50 @@ async function snapshotNear(
   return after ?? null
 }
 
+async function firstSnapshot(env: Env, handle: string): Promise<XSnapshot | null> {
+  const row = await env.DB.prepare(
+    `SELECT id, handle, followers, following, posts_count, checked_at, source, raw_note
+     FROM x_snapshots
+     WHERE handle = ?
+     ORDER BY checked_at ASC
+     LIMIT 1`,
+  )
+    .bind(handle)
+    .first<XSnapshot>()
+  return row ?? null
+}
+
 async function historySnapshots(
   env: Env,
   handle: string,
-  days = 30,
-  limit = 60,
+  limit = 400,
 ): Promise<XSnapshot[]> {
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
   const { results } = await env.DB.prepare(
     `SELECT id, handle, followers, following, posts_count, checked_at, source, raw_note
      FROM x_snapshots
-     WHERE handle = ? AND checked_at >= ?
+     WHERE handle = ?
      ORDER BY checked_at ASC
      LIMIT ?`,
   )
-    .bind(handle, since, limit)
+    .bind(handle, limit)
     .all<XSnapshot>()
   return results ?? []
+}
+
+function dailyHistory(
+  rows: XSnapshot[],
+): { followers: number; checked_at: string; source: string }[] {
+  const byDay = new Map<string, { followers: number; checked_at: string; source: string }>()
+  for (const row of rows) {
+    const day = (row.checked_at || '').slice(0, 10)
+    if (!day) continue
+    byDay.set(day, {
+      followers: row.followers,
+      checked_at: row.checked_at,
+      source: row.source,
+    })
+  }
+  return [...byDay.values()]
 }
 
 function deltaFrom(latest: XSnapshot | null, older: XSnapshot | null): number | null {
@@ -661,21 +688,20 @@ function deltaFrom(latest: XSnapshot | null, older: XSnapshot | null): number | 
 
 async function statsPayload(env: Env, handle: string) {
   const latest = await latestSnapshot(env, handle)
+  const first = await firstSnapshot(env, handle)
   const d7 = await snapshotNear(env, handle, 7)
   const d30 = await snapshotNear(env, handle, 30)
-  const history = await historySnapshots(env, handle, 30, 60)
+  const history = dailyHistory(await historySnapshots(env, handle, 400))
   return {
     handle,
     latest,
+    first,
+    deltaAll: deltaFrom(latest, first),
     delta7: deltaFrom(latest, d7),
     delta30: deltaFrom(latest, d30),
     weekStart: d7,
     monthStart: d30,
-    history: history.map((h) => ({
-      followers: h.followers,
-      checked_at: h.checked_at,
-      source: h.source,
-    })),
+    history,
   }
 }
 

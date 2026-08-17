@@ -203,6 +203,12 @@ export type XStatsResponse = {
     source: string
     raw_note: string | null
   } | null
+  first?: {
+    followers: number
+    checked_at: string
+    source?: string
+  } | null
+  deltaAll?: number | null
   delta7: number | null
   delta30: number | null
   weekStart: { followers: number; checked_at: string } | null
