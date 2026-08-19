@@ -51,6 +51,7 @@ export default function App() {
           <div className="ml-3 hidden flex-1 items-center gap-[22px] md:flex">
             {[
               ['#gap', 'The gap'],
+              ['#rhythm', 'Daily loop'],
               ['#how', 'How it works'],
               ['#inside', 'Inside'],
               ['#on-x', 'On X'],
@@ -188,6 +189,30 @@ getshiploud.com`}
         </p>
       </section>
 
+      <section id="rhythm" className="mx-auto max-w-[1160px] px-6 py-14">
+        <p className="mb-2 font-script text-[26px] font-bold text-orange">the daily loop →</p>
+        <h2 className="mb-3 max-w-[760px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
+          Find a builder. Write like you. You tap Post.
+        </h2>
+        <p className="mb-[34px] max-w-[560px] text-[16.5px] font-bold leading-[1.55] text-muted text-pretty">
+          One ship post and one builder reply. ShipLoud writes the draft. Execution is still yours.
+        </p>
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ['01', 'Journal the ship', 'What shipped, real numbers, a blocker, a link. Two minutes. Empty journal = empty drafts.'],
+            ['02', 'Write like you', 'Three short options from the journal. The last shape you kept or posted comes first.'],
+            ['03', 'You tap Post', 'Post from your account, or copy. Nothing sends itself. No 8-posts-a-day calendar.'],
+            ['04', 'Reply to one builder', 'Radar puts active posts first — real likes, reposts, replies. You write it. You mark it.'],
+          ].map(([n, title, body]) => (
+            <div key={n} className="rounded-[22px] border border-line bg-card p-[18px]">
+              <p className="mb-2 font-script text-2xl font-bold text-orange">{n}</p>
+              <h3 className="mb-1.5 text-[15px] font-black">{title}</h3>
+              <p className="text-[12.5px] font-bold leading-normal text-muted">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section id="how" className="mx-auto max-w-[1160px] px-6 py-14">
         <p className="mb-2 font-script text-[26px] font-bold text-orange">the habit →</p>
         <h2 className="mb-[34px] max-w-[760px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
@@ -222,7 +247,7 @@ getshiploud.com`}
                 {[
                   'A ship journal that drafts your posts',
                   'An approve-first queue: Post to X, or copy',
-                  'A feed of builders you chose, for replies you write',
+                  'A feed of builders you chose — active posts first',
                   'Weekly receipts of what you actually did',
                 ].map((line) => (
                   <p key={line} className="mb-[9px] text-[13.5px] font-extrabold leading-snug last:mb-0">
@@ -399,7 +424,7 @@ Posting the receipt.`}
         <p className="mb-2 font-script text-[26px] font-bold text-orange">on X →</p>
         <h2 className="mb-2.5 text-[40px] font-black leading-[1.12] tracking-[-0.02em]">Real posts. Not a wall of strangers.</h2>
         <p className="mb-[30px] max-w-[560px] text-[15.5px] font-bold text-muted">
-          From @dreamandbuildit — 11 followers, $0 MRR. The same loop the product is for.
+          From @dreamandbuildit — 13 followers, $0 MRR. The same loop the product is for.
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           {[

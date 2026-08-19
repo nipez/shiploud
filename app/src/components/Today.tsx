@@ -11,6 +11,7 @@ import FollowerChart from './FollowerChart'
 
 type Props = {
   journals: JournalEntry[]
+  drafts: Draft[]
   setup: Setup
   metrics: Metrics
   onSave: (entry: JournalEntry) => void
@@ -38,6 +39,7 @@ function applyStatsToMetrics(metrics: Metrics, stats: XStatsResponse): Metrics {
 
 export default function Today({
   journals,
+  drafts,
   setup,
   metrics,
   onSave,
@@ -146,8 +148,8 @@ export default function Today({
     onSave(entry)
     if (project?.id) onSetActiveProject(project.id)
     track('journal_saved')
-    const { drafts, meta } = await generateDraftsSmart(entry, setup)
-    onGeneratedDrafts(drafts)
+    const { drafts: next, meta } = await generateDraftsSmart(entry, setup, 'all', drafts)
+    onGeneratedDrafts(next)
     track('drafts_generated', { source: meta.source, count: meta.count })
   }
 
@@ -174,7 +176,8 @@ export default function Today({
   return (
     <section>
       <div className="mb-6 flex flex-wrap items-center gap-2 rounded-[18px] border border-line bg-cream-2 px-4 py-3">
-        <span className="text-[11px] font-extrabold uppercase tracking-wide text-muted">Today</span>
+        <span className="text-[11px] font-extrabold uppercase tracking-wide text-muted">Today&apos;s loop</span>
+        <span className="hidden text-[12px] font-bold text-muted sm:inline">1 ship post · 1 builder reply</span>
         <HabitChip done={postedToday} yes="Posted the ship" no="Ship not posted yet" />
         <HabitChip done={repliedToday} yes="Replied to a builder" no="No reply marked yet" />
         {!repliedToday && (
@@ -192,7 +195,7 @@ export default function Today({
           className="order-1 mb-0 min-[1000px]:col-start-1 min-[1000px]:self-end"
           eyebrow="today's loop →"
           title="What did you ship today?"
-          sub="Jot it down, pick a draft, tap Post. Two minutes, then back to building."
+          sub="Journal the ship, pick a draft that sounds like you, you tap Post. Then one reply on radar. That's the day."
           action={
             liveFollowers != null ? (
               <span

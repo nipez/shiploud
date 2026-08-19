@@ -3,6 +3,7 @@ import type { Draft, JournalEntry, ReplyTarget, Setup as SetupType } from './typ
 import { activeProject, dropHandleTags, normalizeHandle, setHandleTags } from './types'
 import { resetData, todayISO } from './storage'
 import { generateDraftsFromJournal, isShortEnough } from './generate'
+import { preferredShape } from './draftShape'
 import { useCloudSync } from './useCloudSync'
 import { createInvite, isAdminRole } from './api'
 import { useXConnection } from './useXConnection'
@@ -218,7 +219,7 @@ export default function App() {
       return
     }
     autoShortRef.current = true
-    const fresh = generateDraftsFromJournal(journal, data.setup)
+    const fresh = generateDraftsFromJournal(journal, data.setup, 'all', preferredShape(data.drafts))
     const usable = fresh.filter((d) => isShortEnough(d.text)).slice(0, 3)
     const kept = data.drafts.filter((d) => {
       if (d.status === 'approved' || d.status === 'posted') return true
@@ -568,6 +569,7 @@ export default function App() {
           {tab === 'today' && (
             <Today
               journals={data.journals}
+              drafts={data.drafts}
               setup={data.setup}
               metrics={data.metrics}
               onSave={saveJournal}

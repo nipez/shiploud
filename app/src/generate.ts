@@ -248,6 +248,7 @@ export function generateDraftsFromJournal(
   journal: JournalEntry,
   setup?: Setup | null,
   shape: DraftShape | 'all' = 'all',
+  preferred?: DraftShape | null,
 ): Draft[] {
   if (!journal.shipped.trim()) return []
 
@@ -348,6 +349,15 @@ export function generateDraftsFromJournal(
     ),
   ]
 
+  const mixed =
+    preferred === 'receipt'
+      ? [receipt[0], lessonDrafts[0], straight[0], receipt[1], lessonDrafts[1], straight[1]]
+      : preferred === 'lesson'
+        ? [lessonDrafts[0], receipt[0], straight[0], lessonDrafts[1], receipt[1], straight[1]]
+        : preferred === 'straight'
+          ? [straight[0], receipt[0], lessonDrafts[0], straight[1], receipt[1], lessonDrafts[1]]
+          : [straight[0], receipt[0], lessonDrafts[0], receipt[1], straight[1], receipt[2]]
+
   const drafts =
     shape === 'receipt'
       ? receipt
@@ -355,7 +365,7 @@ export function generateDraftsFromJournal(
         ? lessonDrafts
         : shape === 'straight'
           ? straight
-          : [straight[0], receipt[0], lessonDrafts[0], receipt[1], straight[1], receipt[2]]
+          : mixed
 
   // Final safety: force every draft under hard cap (should already be).
   return drafts.map((d) =>

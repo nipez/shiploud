@@ -12,6 +12,7 @@ import { xReplyIntentUrl } from '../url'
 import { loadRepliedMap, markReplied, unmarkReplied, type RepliedMark } from '../replied'
 import { ScreenHead } from './ScreenHead'
 import { RADAR_INTENTS, tweetMatchesIntent, type RadarIntent } from '../radarIntent'
+import { compareByHeatThenRecency, formatHeatCounts, hotKeys } from '../radarHeat'
 
 const LAST_KEY = 'shiploud-radar-last-v6'
 
@@ -167,6 +168,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('all')
   const [intent, setIntent] = useState<RadarIntent>('all')
+  const [sort, setSort] = useState<'active' | 'newest'>('active')
   const [replied, setReplied] = useState<Record<string, RepliedMark>>(() => loadRepliedMap())
   const [awaitingConfirm, setAwaitingConfirm] = useState<Record<string, boolean>>({})
   const inFlight = useRef(0)
@@ -382,7 +384,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return items.filter((item) => {
+    const filtered = items.filter((item) => {
       if (category === 'uncategorized') {
         if (!handleIsUncategorized(tags, item.handle)) return false
       } else if (category !== 'all') {
@@ -392,7 +394,30 @@ export default function RadarFeed({ setup, onToast }: Props) {
       if (!tweetMatchesIntent(item.text || '', intent)) return false
       return true
     })
-  }, [items, query, category, tags, intent])
+    if (sort === 'newest') {
+      return filtered.slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+    }
+    return filtered.slice().sort(compareByHeatThenRecency)
+  }, [items, query, category, tags, intent, sort])
+
+  const hot = useMemo(
+    () =>
+      hotKeys(
+        visible.map((item) => ({
+          key: `${item.handle}:${item.tweetId}`,
+          likes: item.likes,
+          reposts: item.reposts,
+          replies: item.replies,
+        })),
+      ),
+    [visible],
+  )
+
+  const startHereId = useMemo(() => {
+    const unmarked = visible.filter((item) => !replied[item.tweetId])
+    const next = unmarked.find((item) => hot.has(`${item.handle}:${item.tweetId}`)) ?? unmarked[0]
+    return next ? `${next.handle}:${next.tweetId}` : null
+  }, [visible, replied, hot])
 
   useEffect(() => {
     if (category === 'all') return
@@ -454,6 +479,8 @@ export default function RadarFeed({ setup, onToast }: Props) {
         onCategory={setCategory}
         intent={intent}
         onIntent={setIntent}
+        sort={sort}
+        onSort={setSort}
         tags={categoryChips}
         showUncategorized={showUncategorized}
       />
@@ -476,8 +503,14 @@ export default function RadarFeed({ setup, onToast }: Props) {
           const marked = replied[item.tweetId]
           const awaiting = Boolean(awaitingConfirm[id]) && !marked
           const idea = itemIdeas[0]
+          const isHot = hot.has(id)
+          const counts = formatHeatCounts(item)
+          const startHere = startHereId === id && !marked
           return (
-            <article key={id} className="card-soft rounded-3xl px-5 py-[18px]">
+            <article
+              key={id}
+              className={`card-soft rounded-3xl px-5 py-[18px] ${startHere ? 'ring-2 ring-navy' : ''}`}
+            >
               <div className="mb-[11px] flex items-center gap-[11px]">
                 <Avatar name={displayNameOf(item)} src={item.avatarUrl} />
                 <div className="flex min-w-0 flex-col">
@@ -488,6 +521,16 @@ export default function RadarFeed({ setup, onToast }: Props) {
                   </span>
                 </div>
                 <span className="flex-1" />
+                {startHere && (
+                  <span className="whitespace-nowrap rounded-full bg-navy px-2.5 py-0.5 text-[10.5px] font-black tracking-[0.05em] text-white">
+                    START HERE
+                  </span>
+                )}
+                {isHot && !startHere && (
+                  <span className="whitespace-nowrap rounded-full bg-orange/12 px-2.5 py-0.5 text-[10.5px] font-black tracking-[0.05em] text-orange-deep">
+                    ACTIVE
+                  </span>
+                )}
                 <a
                   href={href}
                   target="_blank"
@@ -501,6 +544,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
               <p className="mb-[13px] whitespace-pre-wrap text-sm font-bold leading-[1.55] text-navy-soft">
                 {item.text}
               </p>
+              {counts && <p className="mb-2 text-[11.5px] font-extrabold text-muted">{counts}</p>}
               <MediaGrid media={item.media ?? []} />
 
               {marked ? (
@@ -742,9 +786,9 @@ function RadarChrome({
 }) {
   return (
     <ScreenHead
-      eyebrow="enter the room →"
+      eyebrow="know where to reply →"
       title="Reply radar"
-      sub="Public posts from builders you added — not your X timeline. You write every reply, you tap Post on X, you mark it."
+      sub="Public posts from builders you added. Active ones first — more likes, reposts, and replies than the rest of this feed. You write every reply."
       action={
         <button
           type="button"
@@ -770,6 +814,8 @@ function FeedFilters({
   onCategory,
   intent,
   onIntent,
+  sort,
+  onSort,
   tags,
   showUncategorized,
 }: {
@@ -779,6 +825,8 @@ function FeedFilters({
   onCategory: (c: string) => void
   intent: RadarIntent
   onIntent: (c: RadarIntent) => void
+  sort: 'active' | 'newest'
+  onSort: (s: 'active' | 'newest') => void
   tags: string[]
   showUncategorized: boolean
 }) {
@@ -789,8 +837,33 @@ function FeedFilters({
   return (
     <div className="mb-3.5 max-w-[760px] space-y-2">
       <p className="text-sm font-semibold text-muted">
-        Jump on launches, numbers, blockers, or asks. You still write the reply.
+        Active first, then launches, numbers, blockers, or asks. You still write the reply.
       </p>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Sort radar">
+        {(
+          [
+            ['active', 'Active first'],
+            ['newest', 'Newest'],
+          ] as const
+        ).map(([id, label]) => {
+          const on = sort === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSort(id)}
+              aria-pressed={on}
+              className={
+                on
+                  ? 'inline-flex min-h-8 items-center rounded-full bg-navy px-3 text-xs font-extrabold text-white'
+                  : 'inline-flex min-h-8 items-center rounded-full border border-line bg-card px-3 text-xs font-extrabold text-navy hover:border-orange/40'
+              }
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by post intent">
         {RADAR_INTENTS.map((c) => {
           const on = intent === c.id

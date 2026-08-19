@@ -1,6 +1,7 @@
 import type { Draft, JournalEntry, Setup } from './types'
 import { activeProject } from './types'
 import { generateDraftsRemote, getToken, hasApi } from './api'
+import { preferredShape } from './draftShape'
 import {
   draftsFromTexts,
   generateDraftsFromJournal,
@@ -17,13 +18,15 @@ export async function generateDraftsSmart(
   journal: JournalEntry,
   setup?: Setup | null,
   shape: DraftShape | 'all' = 'all',
+  knownDrafts: Draft[] = [],
 ): Promise<{ drafts: Draft[]; meta: GenerateMeta }> {
   if (!journal.shipped.trim()) {
     return { drafts: [], meta: { source: 'template', count: 0 } }
   }
   const project = setup ? activeProject(setup) : undefined
+  const prefer = preferredShape(knownDrafts)
   if (shape !== 'all') {
-    const local = generateDraftsFromJournal(journal, setup, shape).filter((d) => isShortEnough(d.text))
+    const local = generateDraftsFromJournal(journal, setup, shape, prefer).filter((d) => isShortEnough(d.text))
     return { drafts: local, meta: { source: 'template', count: local.length } }
   }
   if (hasApi() && getToken()) {
@@ -65,6 +68,6 @@ export async function generateDraftsSmart(
       /* local fallback */
     }
   }
-  const local = generateDraftsFromJournal(journal, setup).filter((d) => isShortEnough(d.text))
+  const local = generateDraftsFromJournal(journal, setup, 'all', prefer).filter((d) => isShortEnough(d.text))
   return { drafts: local, meta: { source: 'template', count: local.length } }
 }

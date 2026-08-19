@@ -4,6 +4,7 @@ import { activeProject } from '../types'
 import { generateDraftsSmart } from '../generateSmart'
 import type { DraftShape } from '../generate'
 import { GENERATOR_MARKER, isShortEnough, xLength, X_LIMIT } from '../generate'
+import { DRAFT_SHAPES, lastPostedShape, preferredShape, sortDraftsByPreferredShape } from '../draftShape'
 import { track } from '../track'
 import PostToX from './PostToX'
 import type { XConnectionState } from '../useXConnection'
@@ -59,9 +60,16 @@ export default function Drafts({
     [drafts, project?.id],
   )
 
+  const prefer = useMemo(() => preferredShape(drafts), [drafts])
+  const lastPosted = useMemo(() => lastPostedShape(drafts), [drafts])
+
   const options = useMemo(
-    () => pendingAll.filter((d) => isShortEnough(d.text)).slice(0, 3),
-    [pendingAll],
+    () =>
+      sortDraftsByPreferredShape(
+        pendingAll.filter((d) => isShortEnough(d.text)),
+        prefer,
+      ).slice(0, 3),
+    [pendingAll, prefer],
   )
 
   const latestJournal = useMemo(
@@ -80,7 +88,7 @@ export default function Drafts({
       return false
     }
     setRegenerating(true)
-    const { drafts: fresh, meta } = await generateDraftsSmart(latestJournal, setup, shape)
+    const { drafts: fresh, meta } = await generateDraftsSmart(latestJournal, setup, shape, drafts)
     onRegen(fresh, project?.id)
     const usable = fresh.filter((d) => isShortEnough(d.text))
     track('drafts_generated', { source: meta.source, count: usable.length, shape })
@@ -165,7 +173,7 @@ export default function Drafts({
           </button>
         </div>
         <p className="text-sm font-bold text-muted">
-          Shapes from the journal — not viral templates. Post from your account, or copy. Nothing posts itself.
+          ShipLoud writes from the journal. You tap Post. The last shape you kept or posted comes first.
           {!xConnection.connected && (
             <>
               {' '}
@@ -186,23 +194,26 @@ export default function Drafts({
       <div id="drafts" className="order-4 flex min-w-0 flex-col gap-3 min-[1000px]:col-start-2">
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Draft shape from journal">
         <span className="mr-1 text-[11px] font-extrabold uppercase tracking-wide text-muted">Write it as</span>
-        {(
-          [
-            ['receipt', 'Receipt'],
-            ['lesson', 'Lesson'],
-            ['straight', 'Straight'],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => handleShape(id)}
-            disabled={regenerating || !latestJournal?.shipped.trim()}
-            className="inline-flex min-h-8 items-center rounded-full border-[1.5px] border-line bg-cream-2 px-3 text-[12px] font-extrabold text-navy hover:border-navy disabled:opacity-50"
-          >
-            {label}
-          </button>
-        ))}
+        {DRAFT_SHAPES.map(({ id, label }) => {
+          const last = lastPosted === id
+          const kept = !last && prefer === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => handleShape(id)}
+              disabled={regenerating || !latestJournal?.shipped.trim()}
+              className={
+                last || kept
+                  ? 'inline-flex min-h-8 items-center rounded-full bg-navy px-3 text-[12px] font-extrabold text-white disabled:opacity-50'
+                  : 'inline-flex min-h-8 items-center rounded-full border-[1.5px] border-line bg-cream-2 px-3 text-[12px] font-extrabold text-navy hover:border-navy disabled:opacity-50'
+              }
+            >
+              {label}
+              {last ? ' · last posted' : kept ? ' · you kept' : ''}
+            </button>
+          )
+        })}
       </div>
       {lengthFailBanner && (
         <div role="alert" className="rounded-2xl border-2 border-red-400 bg-red-50 px-3 py-3 text-sm font-extrabold text-red-700">
@@ -230,11 +241,12 @@ export default function Drafts({
           const len = xLength(d.text)
           const posted = d.status === 'posted'
           const sourceTag = d.source === 'ai' ? 'AI DRAFT' : d.source === 'journal-template' || d.source === 'seed' ? 'TEMPLATE' : 'TEMPLATE'
+          const lastShape = lastPosted != null && d.label?.toLowerCase() === lastPosted
           return (
             <article
               key={d.id}
               className={`rounded-[22px] border-[1.5px] bg-card px-[18px] py-4 shadow-[0_8px_24px_rgba(43,27,77,.06)] ${
-                posted ? 'border-sticker-mint' : savedId === d.id ? 'border-sticker-lilac' : 'border-line'
+                posted ? 'border-sticker-mint' : savedId === d.id ? 'border-sticker-lilac' : lastShape && i === 0 ? 'border-navy' : 'border-line'
               }`}
             >
               <div className="mb-[9px] flex items-center gap-2">
@@ -245,6 +257,11 @@ export default function Drafts({
                 {d.label && (
                   <span className="whitespace-nowrap rounded-full bg-sticker-lilac px-2.5 py-0.5 text-[10.5px] font-black tracking-[0.05em] text-navy">
                     {d.label.toUpperCase()}
+                  </span>
+                )}
+                {lastShape && (
+                  <span className="whitespace-nowrap rounded-full bg-navy px-2.5 py-0.5 text-[10.5px] font-black tracking-[0.05em] text-white">
+                    LAST POSTED
                   </span>
                 )}
                 <span className="flex-1" />
