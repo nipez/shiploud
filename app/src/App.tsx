@@ -16,9 +16,10 @@ import Setup from './components/Setup'
 import Follows from './components/Follows'
 import Login from './components/Login'
 import WeeklyReceipts from './components/WeeklyReceipts'
+import People from './components/People'
 import Toast from './components/Toast'
 
-type Tab = 'today' | 'radar' | 'builders' | 'receipts' | 'setup'
+type Tab = 'today' | 'radar' | 'builders' | 'receipts' | 'people' | 'setup'
 
 const HASH_ALIASES: Record<string, Tab> = {
   today: 'today',
@@ -33,6 +34,9 @@ const HASH_ALIASES: Record<string, Tab> = {
   suggestions: 'builders',
   builders: 'builders',
   receipts: 'receipts',
+  people: 'people',
+  waitlist: 'people',
+  users: 'people',
   setup: 'setup',
 }
 
@@ -85,6 +89,15 @@ function NavIcon({ id }: { id: Tab }) {
       return (
         <svg {...common} strokeWidth="2.4" strokeLinecap="round">
           <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
+        </svg>
+      )
+    case 'people':
+      return (
+        <svg {...common} strokeWidth="2.4" strokeLinecap="round">
+          <circle cx="8" cy="8" r="3.2" />
+          <path d="M2.5 19.5c.7-3 3.1-4.7 5.5-4.7s4.8 1.7 5.5 4.7" />
+          <circle cx="16.5" cy="8.5" r="2.4" />
+          <path d="M15 14.8c2.2.2 4.1 1.6 4.7 4.2" />
         </svg>
       )
     case 'setup':
@@ -165,6 +178,12 @@ export default function App() {
     if (toastTimer.current) window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast(''), 2400)
   }
+
+  const isAdmin = apiConfigured && isAdminRole(user?.role)
+
+  useEffect(() => {
+    if (tab === 'people' && user && !isAdminRole(user.role)) setTab('today')
+  }, [tab, user])
 
   useEffect(() => {
     window.location.hash = tab
@@ -420,6 +439,7 @@ export default function App() {
     { id: 'radar', label: 'Reply radar' },
     { id: 'builders', label: 'Builders' },
     { id: 'receipts', label: 'Receipts' },
+    ...(isAdmin ? [{ id: 'people' as Tab, label: 'People' }] : []),
   ]
 
   const sidebar = (
@@ -510,6 +530,18 @@ export default function App() {
                       className="block w-full px-4 py-2.5 text-left text-sm font-extrabold text-navy hover:bg-cream-2"
                     >
                       {inviteBusy ? 'Creating invite…' : 'Invite a founder'}
+                    </button>
+                  )}
+                  {apiConfigured && isAdminRole(user?.role) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false)
+                        setTab('people')
+                      }}
+                      className="block w-full px-4 py-2.5 text-left text-sm font-extrabold text-navy hover:bg-cream-2"
+                    >
+                      People
                     </button>
                   )}
                   {apiConfigured && isAdminRole(user?.role) && (
@@ -627,6 +659,7 @@ export default function App() {
               standalone
             />
           )}
+          {tab === 'people' && isAdmin && <People />}
           {tab === 'setup' && (
             <Setup
               setup={data.setup}
@@ -644,7 +677,7 @@ export default function App() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         aria-label="Primary"
       >
-        <div className="mx-auto grid max-w-3xl grid-cols-5">
+        <div className={`mx-auto grid max-w-3xl ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
           {([...navItems, { id: 'setup' as Tab, label: 'Setup' }]).map((n) => (
             <button
               key={n.id}

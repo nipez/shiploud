@@ -133,6 +133,61 @@ export async function createInvite(): Promise<string> {
   return data.code
 }
 
+export type AdminWaitlistRow = { email: string; source: string; created_at: string }
+export type AdminUserRow = {
+  id: string
+  email: string
+  display_name: string | null
+  role: string
+  created_at: string
+}
+
+export type AdminPeople = {
+  waitlist: AdminWaitlistRow[]
+  users: AdminUserRow[]
+}
+
+/** Admin-only. Same D1 tables as /admin — waitlist emails and founder accounts. */
+export async function fetchAdminPeople(): Promise<AdminPeople> {
+  const res = await apiFetch('/api/admin/insights?range=all')
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string
+    waitlist?: unknown
+    users?: unknown
+  }
+  if (res.status === 401) {
+    clearToken()
+    throw new Error('unauthorized')
+  }
+  if (res.status === 403) throw new Error('forbidden')
+  if (!res.ok) throw new Error(data.error || 'people_failed')
+  const waitlist = Array.isArray(data.waitlist)
+    ? data.waitlist.filter((r): r is AdminWaitlistRow => {
+        if (!r || typeof r !== 'object') return false
+        const row = r as Record<string, unknown>
+        return typeof row.email === 'string' && typeof row.created_at === 'string'
+      }).map((r) => ({
+        email: r.email,
+        source: typeof r.source === 'string' && r.source ? r.source : 'marketing',
+        created_at: r.created_at,
+      }))
+    : []
+  const users = Array.isArray(data.users)
+    ? data.users.filter((r): r is AdminUserRow => {
+        if (!r || typeof r !== 'object') return false
+        const row = r as Record<string, unknown>
+        return typeof row.id === 'string' && typeof row.email === 'string' && typeof row.created_at === 'string'
+      }).map((r) => ({
+        id: r.id,
+        email: r.email,
+        display_name: typeof r.display_name === 'string' ? r.display_name : null,
+        role: typeof r.role === 'string' ? r.role : 'founder',
+        created_at: r.created_at,
+      }))
+    : []
+  return { waitlist, users }
+}
+
 export type FetchStateResult = {
   data: AppData | null
   /** True when older cloud blob needed setup / per-project migration. */
