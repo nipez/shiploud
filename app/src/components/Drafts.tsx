@@ -156,8 +156,10 @@ export default function Drafts({
         <p className="mb-1.5 font-script text-2xl font-bold text-orange min-[1000px]:col-start-2 min-[1000px]:row-start-1 min-[1000px]:mb-0">
           pick a draft →
         </p>
-        <div className="mb-1.5 flex min-w-0 flex-wrap items-end gap-3 min-[1000px]:col-start-2 min-[1000px]:row-start-2 min-[1000px]:mb-0">
-          <h2 className="text-[31px] font-black tracking-[-0.02em] text-navy">Pick a draft</h2>
+        <h2 className="mb-1.5 text-[31px] font-black tracking-[-0.02em] text-navy min-[1000px]:col-start-2 min-[1000px]:row-start-2 min-[1000px]:mb-0">
+          Pick a draft
+        </h2>
+        <div className="mb-1.5 flex min-h-10 min-w-0 flex-wrap items-center gap-2 min-[1000px]:col-start-2 min-[1000px]:row-start-3 min-[1000px]:mb-0">
           <span className="whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-2.5 py-[3px] text-[11.5px] font-extrabold text-muted">
             {options.length} options · fit one post
           </span>
@@ -174,7 +176,7 @@ export default function Drafts({
             Regen short drafts
           </button>
         </div>
-        <p className="text-sm font-bold text-muted min-[1000px]:col-start-2 min-[1000px]:row-start-3">
+        <p className="text-sm font-bold text-muted min-[1000px]:col-start-2 min-[1000px]:row-start-4">
           ShipLoud writes from the journal. You tap Post. The last shape you kept or posted comes first.
           {!xConnection.connected && (
             <>
@@ -193,7 +195,7 @@ export default function Drafts({
         </p>
       </header>
 
-      <div id="drafts" className="order-4 flex min-w-0 flex-col gap-3 min-[1000px]:col-start-2 min-[1000px]:row-start-4 min-[1000px]:mt-4">
+      <div id="drafts" className="order-4 flex min-w-0 flex-col gap-3 min-[1000px]:col-start-2 min-[1000px]:row-start-5 min-[1000px]:mt-4">
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Draft shape from journal">
         <span className="mr-1 text-[11px] font-extrabold uppercase tracking-wide text-muted">Write it as</span>
         {DRAFT_SHAPES.map(({ id, label }) => {
