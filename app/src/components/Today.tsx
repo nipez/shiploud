@@ -190,9 +190,12 @@ export default function Today({
           </button>
         )}
       </div>
-      <div className="grid items-start gap-x-[22px] gap-y-6 min-[1000px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+      <div className="grid items-start gap-x-[22px] gap-y-6 min-[1000px]:grid-cols-[minmax(0,420px)_minmax(0,1fr)] min-[1000px]:gap-y-1.5">
         <ScreenHead
-          className="order-1 mb-0 min-[1000px]:col-start-1 min-[1000px]:self-end"
+          className="order-1 mb-0 min-[1000px]:contents"
+          eyebrowClassName="min-[1000px]:col-start-1 min-[1000px]:row-start-1 min-[1000px]:mb-0"
+          titleRowClassName="min-[1000px]:col-start-1 min-[1000px]:row-start-2 min-[1000px]:mb-0"
+          subClassName="min-[1000px]:col-start-1 min-[1000px]:row-start-3"
           eyebrow="today's loop →"
           title="What did you ship today?"
           sub="Journal the ship, pick a draft that sounds like you, you tap Post. Then one reply on radar. That's the day."
@@ -213,7 +216,7 @@ export default function Today({
         />
         {children}
         <form
-          className="card-soft order-2 flex w-full flex-col gap-3.5 rounded-3xl p-[22px] min-[1000px]:order-3 min-[1000px]:col-start-1"
+          className="card-soft order-2 flex w-full flex-col gap-3.5 rounded-3xl p-[22px] min-[1000px]:order-none min-[1000px]:col-start-1 min-[1000px]:row-start-4 min-[1000px]:mt-4"
           onSubmit={(e) => {
             e.preventDefault()
             handleSave()
