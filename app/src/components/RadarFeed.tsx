@@ -10,6 +10,7 @@ import { fetchRadar, fetchRadarReplies, repliesForItem, type RadarItem, type Rad
 import { track } from '../track'
 import { xReplyIntentUrl } from '../url'
 import { loadRepliedMap, markReplied, unmarkReplied, type RepliedMark } from '../replied'
+import { localEventToday } from '../track'
 import { ScreenHead } from './ScreenHead'
 import { RADAR_INTENTS, tweetMatchesIntent, type RadarIntent } from '../radarIntent'
 import { compareByHeatThenRecency, formatHeatCounts, hotKeys } from '../radarHeat'
@@ -170,10 +171,23 @@ export default function RadarFeed({ setup, onToast }: Props) {
   const [intent, setIntent] = useState<RadarIntent>('all')
   const [sort, setSort] = useState<'active' | 'newest'>('active')
   const [replied, setReplied] = useState<Record<string, RepliedMark>>(() => loadRepliedMap())
+  const [showReplied, setShowReplied] = useState(false)
   const [awaitingConfirm, setAwaitingConfirm] = useState<Record<string, boolean>>({})
   const inFlight = useRef(0)
   const itemsRef = useRef(items)
   itemsRef.current = items
+
+  const repliesToday = useMemo(() => {
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    const cutoff = start.getTime()
+    let fromMarks = 0
+    for (const m of Object.values(replied)) {
+      const t = Date.parse(m.markedAt)
+      if (Number.isFinite(t) && t >= cutoff) fromMarks += 1
+    }
+    return Math.max(fromMarks, localEventToday('x_replied'))
+  }, [replied])
 
   useEffect(() => {
     if (!loading) {
@@ -385,6 +399,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     const filtered = items.filter((item) => {
+      if (!showReplied && replied[item.tweetId]) return false
       if (category === 'uncategorized') {
         if (!handleIsUncategorized(tags, item.handle)) return false
       } else if (category !== 'all') {
@@ -398,7 +413,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
       return filtered.slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
     }
     return filtered.slice().sort(compareByHeatThenRecency)
-  }, [items, query, category, tags, intent, sort])
+  }, [items, query, category, tags, intent, sort, showReplied, replied])
 
   const hot = useMemo(
     () =>
@@ -430,27 +445,41 @@ export default function RadarFeed({ setup, onToast }: Props) {
     }
   }, [category, categoryChips, showUncategorized])
 
+  const hiddenRepliedCount = !showReplied
+    ? items.filter((item) => replied[item.tweetId]).length
+    : 0
+
   if (handles.length === 0) {
     return (
       <div>
-        <RadarChrome loading={false} onRefresh={refresh} disabled />
-        <p className="max-w-[760px] rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-6 text-sm font-bold text-muted">
-          Add favorite builders to fill this feed.{' '}
-          <a href="#builders" className="font-extrabold text-orange hover:underline">
-            Builders
-          </a>
-          {' · '}
-          <a href="#setup" className="font-extrabold text-orange hover:underline">
-            Setup
-          </a>
-        </p>
+        <RadarChrome loading={false} onRefresh={refresh} disabled repliesToday={repliesToday} />
+        <div className="max-w-[760px] rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-7">
+          <p className="mb-2 text-[15px] font-black text-navy">Add builders to fill this feed</p>
+          <p className="mb-4 max-w-[520px] text-sm font-bold leading-snug text-muted">
+            Reply radar shows public posts from people you chose. Start with a few from Suggested, or add anyone.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="#builders"
+              className="btn-pill inline-flex items-center whitespace-nowrap px-[18px] py-[9px] text-[12.5px] no-underline"
+            >
+              Add from Suggested
+            </a>
+            <a
+              href="#builders"
+              className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-card px-4 py-[9px] text-[12.5px] font-extrabold text-navy no-underline hover:border-navy"
+            >
+              Open Builders
+            </a>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
     <div>
-      <RadarChrome loading={loading} onRefresh={refresh} disabled={loading} />
+      <RadarChrome loading={loading} onRefresh={refresh} disabled={loading} repliesToday={repliesToday} />
       {status.text && (
         <div className="mb-3.5 max-w-[760px] space-y-1.5">
           <p className="text-sm font-semibold text-muted" aria-live="polite">
@@ -481,6 +510,8 @@ export default function RadarFeed({ setup, onToast }: Props) {
         onIntent={setIntent}
         sort={sort}
         onSort={setSort}
+        showReplied={showReplied}
+        onShowReplied={setShowReplied}
         tags={categoryChips}
         showUncategorized={showUncategorized}
       />
@@ -657,9 +688,24 @@ export default function RadarFeed({ setup, onToast }: Props) {
           )
         })}
         {!loading && items.length === 0 && !error && (
-          <p className="rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-6 text-sm font-bold text-muted">
-            No public posts right now — try Refresh.
-          </p>
+          <div className="rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-7">
+            <p className="mb-2 text-[15px] font-black text-navy">No public posts right now</p>
+            <p className="mb-4 max-w-[520px] text-sm font-bold leading-snug text-muted">
+              This feed is public posts from builders you added — not your full X timeline. Try Refresh; it can lag.
+            </p>
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={loading}
+              className="btn-pill inline-flex items-center gap-1.5 whitespace-nowrap px-[18px] py-[9px] text-[12.5px] disabled:opacity-50"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
+                <path d="M21 12a9 9 0 1 1-2.6-6.3" />
+                <path d="M21 3v6h-6" />
+              </svg>
+              Refresh
+            </button>
+          </div>
         )}
         {!loading && items.length > 0 && visible.length === 0 && (
           <p className="rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-6 text-sm font-bold text-muted">
@@ -671,6 +717,8 @@ export default function RadarFeed({ setup, onToast }: Props) {
                 ? 'No posts from uncategorized people.'
                 : category !== 'all'
                   ? `No posts from people tagged ${category}.`
+                  : !showReplied && hiddenRepliedCount > 0
+                    ? `All ${hiddenRepliedCount} post${hiddenRepliedCount === 1 ? '' : 's'} here are ones you already replied to. Turn on Show replied to see them.`
                   : 'No posts match this filter.'}
           </p>
         )}
@@ -779,29 +827,42 @@ function RadarChrome({
   loading,
   onRefresh,
   disabled,
+  repliesToday,
 }: {
   loading: boolean
   onRefresh: () => void
   disabled?: boolean
+  repliesToday: number
 }) {
+  const replyLabel =
+    repliesToday === 0
+      ? '0 replies today'
+      : repliesToday === 1
+        ? '1 reply today'
+        : `${repliesToday} replies today`
   return (
     <ScreenHead
       eyebrow="know where to reply →"
       title="Reply radar"
       sub="Public posts from builders you added. Active ones first — more likes, reposts, and replies than the rest of this feed. You write every reply."
       action={
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={disabled}
-          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy disabled:opacity-50"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
-            <path d="M21 12a9 9 0 1 1-2.6-6.3" />
-            <path d="M21 3v6h-6" />
-          </svg>
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-3.5 py-[7px] text-[12.5px] font-extrabold text-navy">
+            {replyLabel}
+          </span>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={disabled}
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-line bg-cream-2 px-4 py-[9px] text-[12.5px] font-extrabold text-navy hover:border-navy disabled:opacity-50"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
+              <path d="M21 12a9 9 0 1 1-2.6-6.3" />
+              <path d="M21 3v6h-6" />
+            </svg>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
       }
     />
   )
@@ -816,6 +877,8 @@ function FeedFilters({
   onIntent,
   sort,
   onSort,
+  showReplied,
+  onShowReplied,
   tags,
   showUncategorized,
 }: {
@@ -827,6 +890,8 @@ function FeedFilters({
   onIntent: (c: RadarIntent) => void
   sort: 'active' | 'newest'
   onSort: (s: 'active' | 'newest') => void
+  showReplied: boolean
+  onShowReplied: (v: boolean) => void
   tags: string[]
   showUncategorized: boolean
 }) {
@@ -863,6 +928,18 @@ function FeedFilters({
             </button>
           )
         })}
+        <button
+          type="button"
+          onClick={() => onShowReplied(!showReplied)}
+          aria-pressed={showReplied}
+          className={
+            showReplied
+              ? 'inline-flex min-h-8 items-center rounded-full bg-navy px-3 text-xs font-extrabold text-white'
+              : 'inline-flex min-h-8 items-center rounded-full border border-line bg-card px-3 text-xs font-extrabold text-navy hover:border-orange/40'
+          }
+        >
+          Show replied
+        </button>
       </div>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by post intent">
         {RADAR_INTENTS.map((c) => {

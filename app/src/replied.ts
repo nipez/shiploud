@@ -60,14 +60,20 @@ export function unmarkReplied(tweetId: string): Record<string, RepliedMark> {
 
 /** True if any radar card was marked “I posted it” today. */
 export function localRepliedToday(): boolean {
+  return localRepliedCountToday() > 0
+}
+
+/** Count of “I posted it” marks since local midnight. */
+export function localRepliedCountToday(): number {
   const start = new Date()
   start.setHours(0, 0, 0, 0)
   const cutoff = start.getTime()
+  let n = 0
   for (const m of readAll()) {
     const t = Date.parse(m.markedAt)
-    if (Number.isFinite(t) && t >= cutoff) return true
+    if (Number.isFinite(t) && t >= cutoff) n += 1
   }
-  return false
+  return n
 }
 
 /** Last-7-days count from the local mark list (fallback when events are empty). */
