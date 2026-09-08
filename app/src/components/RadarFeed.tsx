@@ -471,7 +471,8 @@ export default function RadarFeed({ setup, onToast }: Props) {
         <div className="max-w-[760px] rounded-[24px] border border-dashed border-line bg-cream-2 px-5 py-7">
           <p className="mb-2 text-[15px] font-black text-navy">Add builders to fill this feed</p>
           <p className="mb-4 max-w-[520px] text-sm font-bold leading-snug text-muted">
-            Reply radar shows public posts from people you chose. Start with a few from Suggested, or add anyone.
+            Reply radar shows public posts from people you chose. Start with Suggested, paste a list via Import
+            handles, or add anyone one at a time.
           </p>
           <div className="flex flex-wrap gap-2">
             <a
@@ -484,7 +485,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
               href="#builders"
               className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-line bg-card px-4 py-[9px] text-[12.5px] font-extrabold text-navy no-underline hover:border-navy"
             >
-              Open Builders
+              Import handles
             </a>
           </div>
         </div>

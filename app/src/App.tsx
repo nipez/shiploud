@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Draft, JournalEntry, ReplyTarget, Setup as SetupType } from './types'
 import { activeProject, dropHandleTags, normalizeHandle, setHandleTags } from './types'
+import { RADAR_MAX_HANDLES } from './importHandles'
 import { resetData, todayISO } from './storage'
 import { generateDraftsFromJournal, isShortEnough } from './generate'
 import { preferredShape } from './draftShape'
@@ -328,23 +329,37 @@ export default function App() {
   }
 
   function addFavoriteBuilder(handle: string) {
+    addFavoriteBuilders([handle])
+  }
+
+  function addFavoriteBuilders(handles: string[]) {
     const proj = activeProject(store.setup)
     if (!proj) return
-    const h = normalizeHandle(handle)
-    if (!h) return
     const have = proj.favoriteBuilders.map(normalizeHandle).filter(Boolean)
-    if (have.includes(h)) return
+    const haveKeys = new Set(have.map((h) => h.toLowerCase()))
+    const next = [...have]
+    for (const raw of handles) {
+      if (next.length >= RADAR_MAX_HANDLES) break
+      const h = normalizeHandle(raw)
+      if (!h) continue
+      const key = h.toLowerCase()
+      if (haveKeys.has(key)) continue
+      haveKeys.add(key)
+      next.push(h)
+    }
+    if (next.length === have.length) return
+    const added = next.length - have.length
     persistImmediate({
       ...store,
       setup: {
         ...store.setup,
         projects: store.setup.projects.map((p) =>
-          p.id === proj.id ? { ...p, favoriteBuilders: [...have, h] } : p,
+          p.id === proj.id ? { ...p, favoriteBuilders: next } : p,
         ),
         updatedAt: new Date().toISOString(),
       },
     })
-    showToast('handle added')
+    showToast(added === 1 ? 'handle added' : `${added} handles added`)
   }
 
   function removeFavoriteBuilder(handle: string) {
@@ -662,6 +677,7 @@ export default function App() {
               favoriteBuilders={project?.favoriteBuilders ?? []}
               builderTags={project?.builderTags}
               onAdd={addFavoriteBuilder}
+              onAddMany={addFavoriteBuilders}
               onRemove={removeFavoriteBuilder}
               onSetTags={setFavoriteBuilderTags}
             />
