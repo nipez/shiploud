@@ -12,27 +12,30 @@ export const RADAR_TEXT_MAX = 25_000
 /** Bump when cached tweet shape changes so skinny payloads are dropped. */
 export const RADAR_PAYLOAD_VERSION = 3
 /** Bump when reply tone/prompt changes so clients drop stale suggested replies. */
-export const REPLY_TONE_VERSION = 4
+export const REPLY_TONE_VERSION = 5
+/** Last-resort placeholder only for feed shape — never show as a Need ideas? suggestion. */
 export const TEMPLATE_REPLY = 'Curious which part of that you keep coming back to?'
 
-/** Workers AI system prompt — warm peer, never dunk. */
+/** Workers AI system prompt — warm peer, never dunk. Prefer empty over generic. */
 export const RADAR_REPLY_SYSTEM = [
   'You write short X replies for an indie founder talking to favorite builders they want to follow and build rapport with.',
   'GOAL: Warm, curious, specific to THAT tweet. Build the relationship. Never dunk, contradict, or one-up.',
   'Return ONLY a JSON array of strings. One reply per tweet, same order.',
   'Each reply: ≤180 characters, first person, peer builder (not a critic, not a fanboy).',
-  'Engage the tweet’s actual claim (the point after a colon, or the last sentence). Name a concrete noun from it (a company, product, number, or the punchline). Not a list opener or the first 4 words.',
+  'Engage the tweet’s actual claim (the point after a colon, or the last sentence). You MUST name a concrete noun from THIS tweet (product, number, company, punchline). Not a list opener or the first 4 words. If you cannot, return "" for that tweet.',
+  'Never reuse a reply written for a different tweet. Melatonin talk on a shipping post is a hard fail.',
   'No guru speak. No Setup field dumps (never paste Building/Who/Goal/Voice labels).',
   'Voice is tone only. Do not quote it.',
   '',
   'PUNCTUATION: Never use an em dash, en dash, or space-hyphen-space as a clause break. Use a period or a new sentence. Hyphens inside a word (set-up) are fine.',
   'Never write the phrase “this landed” (any casing).',
-  'Never ask “how are you testing that” about a fragment.',
-  'Never use generic filler (“what did you try first”, “next small experiment”, “how is this going”) unless the tweet is actually about an experiment or a ship.',
+  'Never ask “how are you testing that” about a fragment or list opener.',
+  'Never use canned fillers: “same muscle over here”, “next small experiment”, “curious how this is going”, “what did you try first”, “this landed”.',
+  'Never leave JSON junk like trailing ", or quotes.',
   '',
   'DO:',
   '- Reference a concrete detail from the claim itself (Google, design, a number, a product)',
-  '- Add a useful question, a same-muscle bridge, or a humble “I shipped X” (never one-upping)',
+  '- Prefer distinct angles when they fit: a question, a same-experience bridge, a humble ship note',
   '- Sound like a peer who actually builds',
   '',
   "DON'T:",
@@ -43,11 +46,12 @@ export const RADAR_REPLY_SYSTEM = [
   '- Fanboy: “fire 🔥”, “this is gold”, “great post!”',
   '- Generic praise with no specifics',
   '- “This landed.” or any clause dash',
+  '- Pad with vague lines that could fit any tweet',
   '',
   'Examples:',
   'Tweet: “#2 advice to grow an audience in 2026: Do the opposite of what AI recommends.”',
   "DON'T: “The ‘#2 advice to grow’ bit stuck. How are you testing that this week?”",
-  'DO: “Curious what the last AI suggestion you ignored was. Did skipping it actually work?”',
+  'DO: “Curious what the last AI suggestion you ignored was. Did skipping it work out?”',
   'Tweet: “Do the opposite of what AI recommends.”',
   "DON'T: “That’s not how you ship. AI takes are cope.”",
   'DO: “Same instinct here. I skip the generic stack advice and ship the ugly version first. What did you cut last?”',
@@ -58,6 +62,9 @@ export const RADAR_REPLY_SYSTEM = [
   "DON'T: “This landed. What’s the next small experiment you’re running?”",
   "DON'T: “Same muscle over here. What did you try first?”",
   'DO: “Which Google screen were you looking at when that hit?”',
+  'Tweet: “Shipped v1 of our inventory tool today.”',
+  "DON'T: “Been meaning to try melatonin for focus too.”",
+  'DO: “Nice. What was the ugliest inventory edge case you still left in v1?”',
 ].join('\n')
 
 const FETCH_HEADERS: HeadersInit = {
@@ -567,13 +574,86 @@ function looksLikeShipOrExperiment(text: string): boolean {
   return looksLikeShip(text) || looksLikeExperiment(text)
 }
 
-/** Generic experiment/ship filler. Banned unless the tweet is actually a ship or experiment. */
-function isBannedFiller(text: string, tweet?: string): boolean {
-  if (/\bthis landed\b/i.test(text)) return true
+/** Known canned lines that fit any tweet. Never return these as Need ideas? */
+const GENERIC_PAD_RE =
+  /^(curious which (line|part|bit) you|same place\. what made you post|which bit of that is the part you keep|curious which part of that you keep coming back|been chewing on that too|same question on my list|what happened right before you wrote that|curious what you want someone to do after reading)/i
+
+const BANNED_FILLER_RE =
+  /\bthis landed\b|same muscle over here|next small experiment|curious how this is going|how is this going for you|what did you try first|how are you testing that/i
+
+/** Generic experiment/ship filler + canned pads. Empty is better than these. */
+export function isBannedFiller(text: string, _tweet?: string): boolean {
   if (hasClauseDash(text)) return true
-  const allow = tweet ? looksLikeShipOrExperiment(tweet) : false
-  if (allow) return false
-  return /what did you try first|next small experiment|how is this going for you/i.test(text)
+  if (BANNED_FILLER_RE.test(text)) return true
+  if (GENERIC_PAD_RE.test(text.trim())) return true
+  if (/#\d+\s+advice to grow|how are you testing that/i.test(text)) return true
+  return false
+}
+
+const STOP_TOKENS = new Set(
+  [
+    'this', 'that', 'with', 'from', 'have', 'been', 'than', 'better', 'worse', 'about', 'they', 'them',
+    'were', 'your', 'their', 'what', 'when', 'where', 'which', 'while', 'would', 'could', 'should',
+    'just', 'even', 'into', 'over', 'under', 'after', 'before', 'because', 'really', 'thing', 'things',
+    'here', 'there', 'some', 'same', 'very', 'much', 'more', 'most', 'also', 'only', 'like', 'want',
+    'keep', 'coming', 'back', 'part', 'line', 'bit', 'post', 'today', 'week', 'make', 'made', 'does',
+    'doing', 'done', 'being', 'will', 'unto', 'onto', 'such', 'each', 'both', 'other', 'than', 'then',
+    'curious', 'someone', 'people', 'builder', 'builders', 'tweet', 'reply',
+  ].map((s) => s.toLowerCase()),
+)
+
+/** Meaningful tokens from the tweet claim — used to reject off-topic / melatonin-on-shipping replies. */
+export function claimTokens(text: string): Set<string> {
+  const out = new Set<string>()
+  const cleaned = text.replace(/https?:\/\/\S+/gi, ' ').replace(/[#@]/g, ' ')
+  for (const a of extractAnchors(cleaned)) {
+    for (const w of a.toLowerCase().split(/[^a-z0-9$%]+/).filter(Boolean)) {
+      if (w.length >= 2 && !STOP_TOKENS.has(w)) out.add(w)
+    }
+  }
+  for (const m of cleaned.matchAll(/\$[\d,.]+[kmb]?|\b\d+(?:\.\d+)?%|\b\d+k\b/gi)) {
+    out.add(m[0].toLowerCase())
+  }
+  for (const raw of cleaned.toLowerCase().split(/[^a-z0-9$%]+/)) {
+    if (raw.length < 4 || STOP_TOKENS.has(raw)) continue
+    out.add(raw)
+  }
+  return out
+}
+
+/** True when the reply names something from THIS tweet (shared token or anchor substring). */
+export function replyGroundedInTweet(reply: string, tweet: string): boolean {
+  const r = reply.toLowerCase()
+  if (!r.trim() || !tweet.trim()) return false
+  for (const a of extractAnchors(tweet)) {
+    const needle = a.toLowerCase().trim()
+    if (needle.length >= 2 && r.includes(needle)) return true
+  }
+  const claim = claimTokens(tweet)
+  if (claim.size === 0) return false
+  const replyParts = r.split(/[^a-z0-9$%]+/).filter((w) => w.length >= 2 && !STOP_TOKENS.has(w))
+  for (const w of replyParts) {
+    if (claim.has(w)) return true
+  }
+  // Soft stem: ship* ↔ ship*
+  if (/\bship/i.test(reply) && /\bship/i.test(tweet)) return true
+  return false
+}
+
+/** Quotes a list/thread opener instead of the claim. */
+function quotesListOpener(reply: string): boolean {
+  return /#\d+\s+advice to grow|day\s+\d+\b.*\bstuck\b|unpopular opinion.*\bstuck\b|how are you testing that/i.test(
+    reply,
+  )
+}
+
+/** Quality gate for Need ideas? — warm, grounded, no canned filler. */
+export function isQualityReply(reply: string, tweet: string): boolean {
+  const t = reply.trim()
+  if (!t || !looksLikeReply(t) || looksDunky(t)) return false
+  if (isBannedFiller(t, tweet) || hasClauseDash(t) || quotesListOpener(t)) return false
+  if (!replyGroundedInTweet(t, tweet)) return false
+  return true
 }
 
 /** Noun-ish fragment from the claim — skip list openers and bare imperatives. */
@@ -671,7 +751,7 @@ export function roastRepliesFor(text: string): string[] {
   }
   const googleDesign = /google/i.test(loserName || text) && /design/i.test(domainName || text)
   if (googleDesign) {
-    lines.push('Same. I keep opening Material and wondering who approved the empty states.')
+    lines.push("Same. I keep opening Google Design and wondering who approved the empty states.")
   } else if (domainName && loserName) {
     lines.push(`Same. I keep opening ${loserName} ${domainName} and wondering who approved the empty states.`)
   } else if (loserName) {
@@ -687,10 +767,10 @@ export function roastRepliesFor(text: string): string[] {
   return lines
 }
 
-/** 3 lines that name a concrete thing from the tweet. Empty if nothing to name. */
+/** Up to 3 lines that name a concrete thing from the tweet. Empty if nothing to name. */
 export function claimSpecificReplies(text: string): string[] {
   const anchors = extractAnchors(text)
-  const a = anchors[0] || lastMeaningfulChunk(text)
+  const a = anchors[0]
   if (!a) return []
   const b = anchors[1] && anchors[1].toLowerCase() !== a.toLowerCase() ? anchors[1] : ''
   const lines = [
@@ -704,14 +784,8 @@ export function claimSpecificReplies(text: string): string[] {
 }
 
 function moreClaimAngles(text: string): string[] {
-  const a = extractAnchors(text)[0] || lastMeaningfulChunk(text)
-  if (!a) {
-    return [
-      'What happened right before you wrote that?',
-      'Curious what you want someone to do after reading it.',
-      'Which bit of that is the part you keep turning over?',
-    ]
-  }
+  const a = extractAnchors(text)[0]
+  if (!a) return []
   return [
     `What happened the last time ${a} went well for you?`,
     `Curious what you'd tell someone just hitting ${a} for the first time.`,
@@ -719,23 +793,33 @@ function moreClaimAngles(text: string): string[] {
   ]
 }
 
-const TEMPLATES_QUESTION = [
-  'Been chewing on that too. What did you land on after you tried it?',
-  'Same question on my list. What would you try first if you had to pick today?',
-  'Curious what pulled you toward that. Any signal that changed your mind?',
-]
+/** Opinion lines that name AI/advice when the tweet is about ignoring generic AI takes. */
+function opinionRepliesFor(text: string): string[] {
+  if (!/\b(ai|advice|recommends?|opposite|generic)\b/i.test(text)) return []
+  return [
+    'Curious what the last AI suggestion you ignored was. Did skipping it work out?',
+    'Same instinct. I skip the generic stack advice and ship the ugly version first. What did you cut last?',
+    'That’s a real filter. When did going against the default AI advice last pay off for you?',
+  ]
+}
 
-const TEMPLATES_SHIP = [
-  'Nice get-it-out. What was the last thing you cut so it could ship?',
-  'Love seeing it live. What felt ugliest but still had to go out?',
-  'Congrats on the ship. What are you watching first to see if it sticks?',
-]
-
-const TEMPLATES_OPINION = [
-  'Curious what the last generic suggestion you ignored was. Did skipping it work?',
-  'Same instinct. What did you do instead the last time the usual advice felt off?',
-  'That’s a real filter. When did going against the default last pay off for you?',
-]
+function shipRepliesFor(text: string): string[] {
+  const anchors = extractAnchors(text)
+  const product = anchors.find((a) => !/^(shipped|shipping|launched|launch|built|building|mvp)$/i.test(a))
+  if (product) {
+    return [
+      `Nice get-it-out on ${product}. What was the last thing you cut so it could ship?`,
+      `Love seeing ${product} live. What felt ugliest but still had to go out?`,
+      `Congrats on shipping ${product}. What are you watching first to see if it sticks?`,
+    ]
+  }
+  if (!looksLikeShip(text)) return []
+  // Only if we can still ground on "ship" stem — prefer empty over vague pad.
+  return [
+    'Nice get-it-out. What was the last thing you cut so it could ship?',
+    'Congrats on the ship. What are you watching first to see if it sticks?',
+  ]
+}
 
 function uniqueReplies(lines: string[], tweet = ''): string[] {
   const out: string[] = []
@@ -743,67 +827,46 @@ function uniqueReplies(lines: string[], tweet = ''): string[] {
   const consider = (line: string) => {
     if (out.length >= SUGGESTED_REPLY_COUNT) return
     const clipped = clipReply(line)
-    if (!clipped || looksDunky(clipped) || seen.has(clipped)) return
-    if (isBannedFiller(clipped, tweet)) return
-    if (hasClauseDash(clipped)) return
+    if (!clipped || seen.has(clipped)) return
+    if (tweet) {
+      if (!isQualityReply(clipped, tweet)) return
+    } else if (looksDunky(clipped) || isBannedFiller(clipped) || hasClauseDash(clipped)) {
+      return
+    }
     seen.add(clipped)
     out.push(clipped)
   }
   for (const line of lines) consider(line)
-  if (tweet) {
-    for (const extra of claimSpecificReplies(tweet)) consider(extra)
-    for (const extra of moreClaimAngles(tweet)) consider(extra)
-    if (looksLikeShipOrExperiment(tweet)) {
-      for (const extra of TEMPLATES_SHIP) consider(extra)
-    }
-  }
-  for (const extra of [
-    'Curious which line you want people to sit with?',
-    'Same place. What made you post this today?',
-    'Which bit of that is the part you keep turning over?',
-  ]) {
-    consider(extra)
-  }
+  // Never pad with generic templates. Empty / fewer than 3 is better.
   return out.slice(0, SUGGESTED_REPLY_COUNT)
 }
 
-/** Three warm/curious template replies. First matches templateReplyFor. */
+/** Up to 3 warm/curious claim-specific replies. May return fewer or none. */
 export function templateRepliesFor(text: string): string[] {
   const claim = claimSpecificReplies(text)
   const extra = moreClaimAngles(text)
   let primary: string[]
   if (looksLikeRoast(text)) primary = [...roastRepliesFor(text), ...claim]
-  else if (looksLikeQuestion(text)) primary = [...claim, ...TEMPLATES_QUESTION]
-  else if (looksLikeShipOrExperiment(text)) primary = [...TEMPLATES_SHIP, ...claim]
-  else if (looksLikeOpinion(text)) primary = [...TEMPLATES_OPINION, ...claim]
+  else if (looksLikeOpinion(text)) primary = [...opinionRepliesFor(text), ...claim]
+  else if (looksLikeShipOrExperiment(text)) primary = [...shipRepliesFor(text), ...claim]
   else primary = [...claim]
 
-  const out = uniqueReplies([...primary, ...extra], text)
-  if (out.length >= SUGGESTED_REPLY_COUNT) return out
-  // Last resort: still 3 distinct curious lines, never "this landed" / experiment filler.
-  const pad = [
-    'Curious which line you want people to sit with?',
-    'Same place. What made you post this today?',
-    'Which bit of that is the part you keep turning over?',
-  ]
-  return uniqueReplies([...out, ...pad], text)
+  return uniqueReplies([...primary, ...extra], text)
 }
 
 export function templateReplyFor(text: string): string {
-  return templateRepliesFor(text)[0] || TEMPLATE_REPLY
+  return templateRepliesFor(text)[0] || ''
 }
 
-/** Prefer a fast AI line as #1 when we already have it; fill the rest from templates. */
+/** Prefer a fast AI line as #1 when grounded; fill the rest from claim-specific templates. */
 export function repliesForTweet(text: string, aiReply?: string): string[] {
   const templates = templateRepliesFor(text)
   const clipped = aiReply ? clipReply(aiReply) : ''
   const first =
-    clipped && looksLikeReply(clipped) && !looksDunky(clipped) && !isBannedFiller(clipped, text)
-      ? clipped
-      : ''
+    clipped && isQualityReply(clipped, text) ? clipped : ''
   if (!first) return templates
   const rest = templates.filter((t) => t !== first)
-  return [first, ...rest].slice(0, SUGGESTED_REPLY_COUNT)
+  return uniqueReplies([first, ...rest], text)
 }
 
 const DUNKY_RE =
@@ -832,8 +895,9 @@ async function suggestWithAi(
   const voiceLine = voice.trim().slice(0, 200) || 'short, direct, ship-in-public'
   const user = [
     'These people are favorite builders. Replies should build the relationship, not dunk.',
-    'Engage each tweet’s actual claim. Name a concrete noun from it. Not a list opener or the first 4 words.',
+    'Engage each tweet’s actual claim. Name a concrete noun from THAT tweet only. Not a list opener or the first 4 words.',
     'Never write “this landed”. Never use em dashes, en dashes, or space-hyphen-space. Never ask “how are you testing that” about a fragment.',
+    'Never reuse a line across tweets. If you cannot name a concrete detail, return an empty string for that index.',
     `Voice (tone only): ${voiceLine}`,
     'Tweets:',
     ...tweets.map((t, i) => `${i + 1}. @${t.handle}: ${t.text.slice(0, 280)}`),
@@ -855,10 +919,10 @@ async function suggestWithAi(
     const item = arr[i]
     const text = typeof item === 'string' ? item : asString(asRecord(item)?.text)
     const clipped = clipReply(text)
-    const bad = !clipped || looksDunky(clipped) || !looksLikeReply(clipped) || isBannedFiller(clipped, tweets[i].text)
-    out.push(bad ? templateReplyFor(tweets[i].text) : clipped)
+    const tweetText = tweets[i].text
+    const good = clipped && isQualityReply(clipped, tweetText)
+    out.push(good ? clipped : templateReplyFor(tweetText))
   }
-  if (out.some((t) => !looksLikeReply(t) || looksDunky(t))) return null
   return out
 }
 
@@ -873,14 +937,18 @@ function looksLikeReply(text: string): boolean {
   return true
 }
 
-function extractNumberedReplies(raw: string, count: number): string[] | null {
+function extractNumberedReplies(raw: string, count: number, exact = true): string[] | null {
   const lines = raw
     .split(/\n+/)
     .map((l) => l.replace(/^\s*(?:[-*]\s+|\d+[.)]\s+)/, '').trim())
     .map((l) => tidyReply(l))
     .filter((l) => l && !/^```/.test(l) && looksLikeReply(l))
-  if (lines.length !== count) return null
-  return lines
+  if (exact) {
+    if (lines.length !== count) return null
+    return lines
+  }
+  if (lines.length === 0) return null
+  return lines.slice(0, count)
 }
 
 export async function suggestReplies(
@@ -922,15 +990,16 @@ export async function suggestRepliesWithBudget(
 }
 
 const MORE_REPLIES_SYSTEM = [
-  'You write 3 short X replies for an indie founder talking to a favorite builder they want rapport with.',
+  'You write up to 3 short X replies for an indie founder talking to a favorite builder they want rapport with.',
   'GOAL: Warm, curious, specific to THAT tweet. Build the relationship. Never dunk, contradict, or one-up.',
-  'Return ONLY a JSON array of exactly 3 strings.',
+  'Return ONLY a JSON array of 1–3 strings. Prefer fewer replies over generic ones. Empty array is allowed if nothing concrete fits.',
   'Each reply: ≤180 characters, first person, peer builder (not a critic, not a fanboy).',
-  'Engage the actual claim. Name a concrete noun from the tweet. Never quote a list opener like “#2 advice to grow” or ask “how are you testing that” about a fragment.',
-  'The 3 replies must be distinct angles (a question, a same-muscle bridge, a humble ship note).',
+  'Engage the actual claim. You MUST name a concrete noun from the tweet (product, number, company, punchline). Never quote a list opener like “#2 advice to grow” or ask “how are you testing that” about a fragment.',
+  'Prefer distinct angles when they fit (a question, a same-experience bridge, a humble ship note) — skip an angle if it would be generic.',
   'No guru speak. No Setup field dumps. Voice is tone only. Do not quote it.',
-  'Never write “this landed”. Never use em dashes, en dashes, or space-hyphen-space as a clause break.',
-  "DON'T: sarcasm, dunks, fanboy praise, generic “great post”.",
+  'Never write “this landed”, “same muscle over here”, “next small experiment”, or “curious how this is going”.',
+  'Never use em dashes, en dashes, or space-hyphen-space as a clause break. No trailing JSON junk like ",',
+  "DON'T: sarcasm, dunks, fanboy praise, generic “great post”, or lines that could fit any unrelated tweet.",
 ].join('\n')
 
 export async function generateMoreReplies(
@@ -939,12 +1008,15 @@ export async function generateMoreReplies(
 ): Promise<{ replies: string[]; source: 'ai' | 'template' }> {
   const text = (input.text || '').trim()
   const avoid = new Set(
-    (input.avoid ?? []).map((s) => clipReply(String(s))).filter((s) => s && s !== TEMPLATE_REPLY),
+    (input.avoid ?? []).map((s) => clipReply(String(s))).filter(Boolean),
   )
   const templates = templateRepliesFor(text).filter((t) => !avoid.has(t))
-  const fallback = uniqueReplies([...templates, ...claimSpecificReplies(text), ...moreClaimAngles(text)], text)
+  const fallback = uniqueReplies(templates, text)
 
-  if (!text || !ai || typeof ai.run !== 'function') {
+  if (!text) {
+    return { replies: [], source: 'template' }
+  }
+  if (!ai || typeof ai.run !== 'function') {
     return { replies: fallback, source: 'template' }
   }
 
@@ -952,8 +1024,8 @@ export async function generateMoreReplies(
     const voiceLine = (input.voice || '').trim().slice(0, 200) || 'short, direct, ship-in-public'
     const handle = (input.handle || '').replace(/^@+/, '').trim()
     const user = [
-      'Write 3 distinct short X replies to this one tweet. Return a JSON array of 3 strings.',
-      'Engage the actual claim. Name a concrete noun. Never write “this landed”. No em/en dashes or space-hyphen-space.',
+      'Write up to 3 distinct short X replies to this one tweet. Return a JSON array of strings (1–3 items, or [] if nothing concrete).',
+      'Each reply must name a concrete noun from the tweet. Never write “this landed” or canned fillers. No em/en dashes or space-hyphen-space.',
       `Voice (tone only): ${voiceLine}`,
       handle ? `Author: @${handle}` : '',
       `Tweet: ${text.slice(0, 500)}`,
@@ -973,21 +1045,14 @@ export async function generateMoreReplies(
       temperature: 0.7,
     })
     const raw = aiResponseText(result)
-    const arr = extractJsonArray(raw) || extractNumberedReplies(raw, 3)
+    const arr = extractJsonArray(raw) || extractNumberedReplies(raw, 3, false)
     const cleaned: string[] = []
     const seen = new Set<string>()
     if (arr) {
       for (const item of arr) {
         const s = typeof item === 'string' ? item : asString(asRecord(item)?.text)
         const clipped = clipReply(s)
-        if (
-          !clipped ||
-          !looksLikeReply(clipped) ||
-          looksDunky(clipped) ||
-          isBannedFiller(clipped, text) ||
-          avoid.has(clipped) ||
-          seen.has(clipped)
-        ) {
+        if (!clipped || avoid.has(clipped) || seen.has(clipped) || !isQualityReply(clipped, text)) {
           continue
         }
         seen.add(clipped)
@@ -995,11 +1060,11 @@ export async function generateMoreReplies(
         if (cleaned.length >= SUGGESTED_REPLY_COUNT) break
       }
     }
-    if (cleaned.length >= SUGGESTED_REPLY_COUNT) {
-      return { replies: cleaned.slice(0, SUGGESTED_REPLY_COUNT), source: 'ai' }
+    if (cleaned.length > 0) {
+      const merged = uniqueReplies([...cleaned, ...templates], text)
+      return { replies: merged, source: 'ai' }
     }
-    const padded = uniqueReplies([...cleaned, ...templates, ...claimSpecificReplies(text), ...moreClaimAngles(text)], text)
-    return { replies: padded, source: cleaned.length > 0 ? 'ai' : 'template' }
+    return { replies: fallback, source: 'template' }
   } catch {
     return { replies: fallback, source: 'template' }
   }
@@ -1181,7 +1246,7 @@ export async function buildRadar(
     const suggestedReplies = repliesForTweet(t.text, aiReplies[i])
     return {
       ...t,
-      suggestedReply: suggestedReplies[0] || TEMPLATE_REPLY,
+      suggestedReply: suggestedReplies[0] || '',
       suggestedReplies,
     }
   })

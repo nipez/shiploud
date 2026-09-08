@@ -17,19 +17,27 @@ import { compareByHeatThenRecency, formatHeatCounts, hotKeys } from '../radarHea
 
 const LAST_KEY = 'shiploud-radar-last-v6'
 
-/** Known pad lines the API still attaches — never paint these as “ideas”. */
+/** Known pad lines — never paint these as “ideas”. */
 const GENERIC_IDEA =
-  /^(curious which (line|part|bit) you|same place\. what made you post|which bit of that is the part you keep|curious which part of that you keep coming back|been chewing on that too|same question on my list|same instinct\. what did you do instead|that'?s a real filter\.|nice get-it-out\.|love seeing it live\.|congrats on the ship\.)/i
+  /^(curious which (line|part|bit) you|same place\. what made you post|which bit of that is the part you keep|curious which part of that you keep coming back|been chewing on that too|same question on my list|what happened right before you wrote that|curious what you want someone to do after reading)/i
+
+const BANNED_IDEA =
+  /\bthis landed\b|same muscle over here|next small experiment|curious how this is going|how is this going for you|what did you try first|how are you testing that/i
 
 function stripAttachedReplies(item: RadarItem): RadarItem {
   if (!item.suggestedReply && (!item.suggestedReplies || item.suggestedReplies.length === 0)) return item
   return { ...item, suggestedReply: '', suggestedReplies: [] }
 }
 
-function usableIdeas(replies: string[], tweet: string, source: 'ai' | 'template'): string[] {
-  if (source === 'template') return []
+/** Keep only short, non-canned ideas. Empty is better than filler. */
+function usableIdeas(replies: string[], tweet: string): string[] {
   return repliesForItem({ suggestedReply: replies[0] || '', suggestedReplies: replies, text: tweet })
-    .filter((r) => !GENERIC_IDEA.test(r.trim()))
+    .filter((r) => {
+      const t = r.trim()
+      if (!t || GENERIC_IDEA.test(t) || BANNED_IDEA.test(t)) return false
+      if (/[—–]/.test(t) || /\s-\s/.test(t)) return false
+      return true
+    })
     .slice(0, 3)
 }
 
@@ -164,6 +172,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [customDrafts, setCustomDrafts] = useState<Record<string, string>>({})
   const [ideas, setIdeas] = useState<Record<string, string[]>>({})
+  const [ideasFetched, setIdeasFetched] = useState<Record<string, boolean>>({})
   const [ideasOpen, setIdeasOpen] = useState<Record<string, boolean>>({})
   const [generating, setGenerating] = useState<Set<string>>(() => new Set())
   const [query, setQuery] = useState('')
@@ -299,8 +308,12 @@ export default function RadarFeed({ setup, onToast }: Props) {
 
   async function loadIdeas(item: RadarItem) {
     const id = `${item.handle}:${item.tweetId}`
+    if (ideasOpen[id]) {
+      setIdeasOpen((prev) => ({ ...prev, [id]: false }))
+      return
+    }
     setIdeasOpen((prev) => ({ ...prev, [id]: true }))
-    if (generating.has(id)) return
+    if (ideasFetched[id] || generating.has(id)) return
     setGenerating((prev) => new Set(prev).add(id))
     try {
       const res = await fetchRadarReplies({
@@ -309,10 +322,12 @@ export default function RadarFeed({ setup, onToast }: Props) {
         handle: item.handle,
         avoid: ideas[id] ?? [],
       })
-      const next = usableIdeas(res.replies, item.text, res.source)
+      const next = usableIdeas(res.replies, item.text)
       setIdeas((prev) => ({ ...prev, [id]: next }))
+      setIdeasFetched((prev) => ({ ...prev, [id]: true }))
     } catch {
       setIdeas((prev) => ({ ...prev, [id]: [] }))
+      setIdeasFetched((prev) => ({ ...prev, [id]: true }))
     } finally {
       setGenerating((prev) => {
         const next = new Set(prev)
@@ -533,7 +548,7 @@ export default function RadarFeed({ setup, onToast }: Props) {
           const showIdeas = Boolean(ideasOpen[id])
           const marked = replied[item.tweetId]
           const awaiting = Boolean(awaitingConfirm[id]) && !marked
-          const idea = itemIdeas[0]
+          const ideasReady = Boolean(ideasFetched[id]) && !generating.has(id)
           const isHot = hot.has(id)
           const counts = formatHeatCounts(item)
           const startHere = startHereId === id && !marked
@@ -607,14 +622,27 @@ export default function RadarFeed({ setup, onToast }: Props) {
                       {generating.has(id) ? 'Finding ideas…' : showIdeas ? 'Hide ideas' : 'Need ideas?'}
                     </button>
                   </div>
-                  {showIdeas && !generating.has(id) && idea && (
-                    <button
-                      type="button"
-                      onClick={() => applyIdea(item, idea)}
-                      className="mb-2 w-full rounded-xl border-[1.5px] border-dashed border-line bg-cream-2 px-3 py-[9px] text-left text-[12.5px] font-bold leading-snug text-navy-soft hover:border-orange"
-                    >
-                      {idea} <span className="font-black text-orange">· use it</span>
-                    </button>
+                  {showIdeas && generating.has(id) && (
+                    <p className="mb-2 text-[12.5px] font-bold text-muted">Finding ideas…</p>
+                  )}
+                  {showIdeas && ideasReady && itemIdeas.length > 0 && (
+                    <div className="mb-2 flex flex-col gap-1.5">
+                      {itemIdeas.map((idea) => (
+                        <button
+                          key={idea}
+                          type="button"
+                          onClick={() => applyIdea(item, idea)}
+                          className="w-full rounded-xl border-[1.5px] border-dashed border-line bg-cream-2 px-3 py-[9px] text-left text-[12.5px] font-bold leading-snug text-navy-soft hover:border-orange"
+                        >
+                          {idea} <span className="font-black text-orange">· use it</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {showIdeas && ideasReady && itemIdeas.length === 0 && (
+                    <p className="mb-2 text-[12.5px] font-bold text-muted">
+                      Nothing good — write your own
+                    </p>
                   )}
                   <textarea
                     value={draft}
