@@ -74,13 +74,14 @@ export default function App() {
 
       <header className="mx-auto grid max-w-[1160px] items-center gap-8 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:py-[72px]">
         <div>
-          <p className="mb-2.5 font-script text-[27px] font-bold text-orange">build in public →</p>
+          <p className="mb-2.5 font-script text-[27px] font-bold text-orange">know where to reply →</p>
           <h1 className="mb-[18px] text-4xl font-black leading-[1.04] tracking-[-0.02em] text-balance sm:text-[58px]">
-            Turn today's ship notes into <span className="text-orange">X posts people actually follow.</span>
+            Reply to the builders who matter.{' '}
+            <span className="text-orange">You write it. X posts it.</span>
           </h1>
           <p className="mb-[26px] max-w-[520px] text-lg font-bold leading-[1.55] text-muted text-pretty">
-            You shipped it. Then you said nothing. Journal the ship, pick a short draft, post it yourself. Two minutes —
-            then back to building.
+            Public posts from people you add. Active ones first. No auto-spam. Built for founders shipping
+            toward $10K MRR.
           </p>
           <WaitlistForm id="hero-waitlist" source="marketing-hero" />
           <p className="mt-3.5 text-[13px] font-bold text-muted">
@@ -88,7 +89,7 @@ export default function App() {
             <span className="font-black text-orange">$10K MRR</span> and beyond, not engagement farmers.
           </p>
           <div className="mt-[26px] flex flex-wrap items-center gap-2">
-            {['ship journal', '3 short drafts', 'you tap Post', 'replies on X', 'weekly receipts'].map((chip, i) => (
+            {['add builders', 'Reply radar', 'write it', 'Reply on X', 'I posted it'].map((chip, i) => (
               <span key={chip} className="inline-flex items-center gap-2">
                 {i > 0 && <span className="text-[13px] font-black text-orange">→</span>}
                 <span className="rounded-full border-[1.5px] border-line bg-cream-2 px-3 py-1 text-xs font-extrabold">
@@ -101,79 +102,79 @@ export default function App() {
 
         <div className="relative min-h-[460px]">
           <span className="sticker absolute -top-[30px] right-2.5 z-[3] rotate-[5deg] bg-sticker-yellow px-[15px] py-[7px] text-[13.5px]">
-            Approve first
+            You write it
           </span>
           <span className="sticker absolute bottom-0.5 -left-1.5 z-[3] -rotate-[7deg] bg-sticker-sky px-[15px] py-[7px] text-[13.5px]">
-            Day 1
+            Active first
           </span>
           <span className="sticker absolute -bottom-3.5 right-[22px] z-[3] rotate-[8deg] bg-sticker-mint px-[15px] py-[7px] text-[13.5px]">
-            Zero fluff
+            Receipts
           </span>
 
-          <div className="card-soft relative z-[1] max-w-[400px] -rotate-2 rounded-3xl px-[22px] py-5">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-[10.5px] font-black tracking-[0.09em] text-orange">SHIP JOURNAL · TODAY</span>
-              <span className="text-[11.5px] font-extrabold text-muted">Aug 14</span>
-            </div>
-            <p className="mb-0.5 text-[11px] font-extrabold text-muted">What shipped</p>
-            <p className="mb-2.5 text-sm font-extrabold leading-snug">ShipLoud landing live at getshiploud.com</p>
-            <p className="mb-0.5 text-[11px] font-extrabold text-muted">Numbers</p>
-            <p className="mb-2.5 text-sm font-extrabold leading-snug">11 followers · $0 MRR · 1 product shipped</p>
-            <p className="mb-0.5 text-[11px] font-extrabold text-muted">Blocker / lesson</p>
-            <p className="text-sm font-extrabold leading-snug">X login blocked. Decision: dogfood before pitch.</p>
-          </div>
-          <p className="relative z-[2] ml-[46%] my-0.5 -rotate-4 whitespace-nowrap font-script text-2xl font-bold text-orange">
-            you approve →
-          </p>
-          <div className="relative z-[2] ml-11 max-w-[400px] rotate-2 rounded-3xl border border-white/10 px-[22px] py-5 text-[#FFF8EF] shadow-[0_18px_40px_rgba(43,27,77,.22)] [background:radial-gradient(120%_80%_at_50%_0%,#2A2438_0%,#15121F_55%,#0E0C14_100%)]">
+          <div className="relative z-[1] max-w-[400px] -rotate-2 rounded-3xl border border-white/10 px-[22px] py-5 text-[#FFF8EF] shadow-[0_18px_40px_rgba(43,27,77,.22)] [background:radial-gradient(120%_80%_at_50%_0%,#2A2438_0%,#15121F_55%,#0E0C14_100%)]">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[10.5px] font-black tracking-[0.09em] text-[rgba(255,214,170,.75)]">
-                DRAFT · FITS ONE POST
+                REPLY RADAR · ACTIVE FIRST
               </span>
-              <span className="text-[11.5px] font-extrabold text-[rgba(245,240,255,.5)]">81/280</span>
+              <span className="text-[11.5px] font-extrabold text-[rgba(245,240,255,.5)]">3 replies today</span>
             </div>
-            <p className="mb-4 whitespace-pre-line text-[14.5px] font-bold leading-[1.55]">
-              {`Shipped today.
-ShipLoud landing
-
-Not waiting for perfect.
-getshiploud.com`}
-            </p>
-            <div className="flex gap-2">
+            <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-[11px]">
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="text-[12.5px] font-black text-[#FFB088]">@marclou</span>
+                <span className="rounded-full bg-[#7C6CF0] px-2 py-px text-[9.5px] font-black tracking-wide text-white">
+                  START HERE
+                </span>
+              </div>
+              <p className="text-xs font-bold leading-snug text-[#FFF8EF]/78">
+                Today is a special day for me. I've made $3M with my 36 startups.
+              </p>
+            </div>
+            <div className="rounded-[10px] border border-white/[0.06] bg-black/28 px-[11px] py-[9px]">
+              <p className="mb-1 text-[9.5px] font-extrabold tracking-wide text-[rgba(255,214,170,.7)]">
+                YOUR REPLY · YOU WRITE IT
+              </p>
+              <p className="text-xs font-bold leading-snug">
+                Congrats on the $3M. Which of the 36 taught you the most about distribution?
+              </p>
+            </div>
+            <div className="mt-3 flex gap-2">
               <span className="inline-flex items-center whitespace-nowrap rounded-full bg-orange px-[18px] py-[9px] text-[13px] font-black text-white shadow-[0_3px_0_#C9440A]">
-                Post to X
+                Reply on X
               </span>
               <span className="inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-white/20 px-[18px] py-[9px] text-[13px] font-extrabold text-[#FFF8EF]/90">
-                Copy
+                I posted it
               </span>
             </div>
           </div>
+          <p className="relative z-[2] ml-[38%] mt-3 -rotate-4 whitespace-nowrap font-script text-2xl font-bold text-orange">
+            opens X ready →
+          </p>
         </div>
       </header>
 
       <section id="gap" className="mx-auto max-w-[1160px] px-6 py-14">
         <p className="mb-2 font-script text-[26px] font-bold text-orange">the problem →</p>
         <h2 className="mb-[34px] max-w-[720px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
-          I shipped it and said nothing.
+          You lurk-reply or go quiet.
           <br />
-          The log is still in Notes.
+          The builders who matter keep shipping.
         </h2>
         <div className="mb-[22px] grid gap-[18px] md:grid-cols-3">
           {[
             {
               n: '01',
-              title: 'You ship… quietly',
-              body: 'The feature is live. The tweet is not. 0–1K followers. You reply to every launch. Your own receipt is still in Notes.',
+              title: 'The feed is noise',
+              body: 'Timeline is tool replies and "how I grew to 10K" threads. The posts worth answering get buried.',
             },
             {
               n: '02',
-              title: 'The feed gap',
-              body: 'Your timeline is tool replies and "how I grew to 10K" threads you will never rewrite in your voice.',
+              title: 'You show up late — or not at all',
+              body: '0–1K followers. You mean to reply to launches, numbers, blockers, asks. Then the day ends.',
             },
             {
               n: '03',
               title: 'What actually compounds',
-              body: 'The accounts you admire post boring, concrete updates. Numbers, a URL, day 12. Then they reply to one builder. That is the habit.',
+              body: 'Showing up in the threads that matter — ship notes, real questions, receipts. Conversation-first, not broadcast-first.',
             },
           ].map((c) => (
             <div key={c.n} className="card-soft rounded-[26px] p-6">
@@ -184,25 +185,26 @@ getshiploud.com`}
           ))}
         </div>
         <p className="max-w-[640px] text-[16.5px] font-extrabold text-pretty">
-          ShipLoud turns your build progress into posts that sound like you shipped —{' '}
-          <span className="bg-[linear-gradient(transparent_62%,#FFE566_62%)]">not like you attended a webinar.</span>
+          ShipLoud is the habit of shipping loud in{' '}
+          <span className="bg-[linear-gradient(transparent_62%,#FFE566_62%)]">the replies that matter.</span>
         </p>
       </section>
 
       <section id="rhythm" className="mx-auto max-w-[1160px] px-6 py-14">
         <p className="mb-2 font-script text-[26px] font-bold text-orange">the daily loop →</p>
         <h2 className="mb-3 max-w-[760px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
-          Find a builder. Write like you. You tap Post.
+          Know where to reply. Write it. Post on X. Mark it.
         </h2>
         <p className="mb-[34px] max-w-[560px] text-[16.5px] font-bold leading-[1.55] text-muted text-pretty">
-          One ship post and one builder reply. ShipLoud writes the draft. Execution is still yours.
+          Reply radar surfaces public posts from builders you chose. Active ones first. Execution is still yours.
         </p>
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            ['01', 'Journal the ship', 'What shipped, real numbers, a blocker, a link. Two minutes. Empty journal = empty drafts.'],
-            ['02', 'Write like you', 'Three short options from the journal. The last shape you kept or posted comes first.'],
-            ['03', 'You tap Post', 'Post from your account, or copy. Nothing sends itself. No 8-posts-a-day calendar.'],
-            ['04', 'Reply to one builder', 'Radar puts active posts first — real likes, reposts, replies. You write it. You mark it.'],
+            ['01', 'Add builders', 'Anyone you care about. Suggested starter list — same for everyone, not an algorithm.'],
+            ['02', 'Open Reply radar', 'Public posts only. Active ones float up — more likes, reposts, replies in your feed.'],
+            ['03', 'Write the reply', 'Your voice. Short. Concrete. No auto AI dump on every card.'],
+            ['04', 'Reply on X', 'Opens X with your text ready. You tap Post. We don’t auto-send.'],
+            ['05', 'I posted it', 'One tap. Counted in receipts. Soft goal: a few replies today.'],
           ].map(([n, title, body]) => (
             <div key={n} className="rounded-[22px] border border-line bg-card p-[18px]">
               <p className="mb-2 font-script text-2xl font-bold text-orange">{n}</p>
@@ -216,15 +218,15 @@ getshiploud.com`}
       <section id="how" className="mx-auto max-w-[1160px] px-6 py-14">
         <p className="mb-2 font-script text-[26px] font-bold text-orange">the habit →</p>
         <h2 className="mb-[34px] max-w-[760px] text-[40px] font-black leading-[1.12] tracking-[-0.02em] text-balance">
-          ShipLoud doesn't buy reach. It makes the posting habit that actually gets founders noticed.
+          ShipLoud doesn’t buy reach. It makes the reply habit that gets founders noticed.
         </h2>
         <div className="mb-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            ['1', 'Journal the ship', 'What shipped, numbers, blocker, link. Two minutes.'],
-            ['2', 'Get short options', 'A few drafts in your voice. From the journal, not thin air.'],
-            ['3', 'Approve & post', 'Post to X from the app, or copy. Nothing sends itself.'],
-            ['4', 'Reply to builders', 'You write it. Tap Reply on X. Mark "I posted it."'],
-            ['5', 'See the receipts', 'Posts, replies, follower snapshots. Was the habit real?'],
+            ['1', 'Add builders', 'People whose threads you want to show up in.'],
+            ['2', 'Scan the radar', 'Active first. Launches, numbers, blockers, asks.'],
+            ['3', 'Write your reply', 'You write every word. Optional ideas only if you ask.'],
+            ['4', 'Reply on X', 'Intent URL opens X. You tap Post. Then mark I posted it.'],
+            ['5', 'See the receipts', 'Replies posted. Was the habit real this week?'],
           ].map(([n, title, body]) => (
             <div key={n} className="rounded-[22px] border border-line bg-card p-[18px]">
               <span className="mb-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange text-[12.5px] font-black text-white shadow-[0_2px_0_#C9440A]">
@@ -236,8 +238,8 @@ getshiploud.com`}
           ))}
         </div>
         <p className="mb-7 text-[16.5px] font-extrabold">
-          Noticed = <span className="bg-[linear-gradient(transparent_62%,#FFE566_62%)]">consistent ship logs + replies</span>,
-          not a viral thread.
+          Noticed = <span className="bg-[linear-gradient(transparent_62%,#FFE566_62%)]">showing up in the right threads</span>,
+          not a viral broadcast.
         </p>
         <div className="grid items-stretch gap-[18px] lg:grid-cols-2">
           <div className="card-soft rounded-[26px] p-[26px]">
@@ -245,10 +247,10 @@ getshiploud.com`}
               <div>
                 <p className="mb-3 text-xs font-black tracking-[0.08em] text-orange">SHIPLOUD IS</p>
                 {[
-                  'A ship journal that drafts your posts',
-                  'An approve-first queue: Post to X, or copy',
-                  'A feed of builders you chose — active posts first',
-                  'Weekly receipts of what you actually did',
+                  'Reply radar: public posts from builders you chose',
+                  'Active first — relative to your list, honestly',
+                  'You write it · Reply on X · I posted it',
+                  'Weekly receipts of replies you actually sent',
                 ].map((line) => (
                   <p key={line} className="mb-[9px] text-[13.5px] font-extrabold leading-snug last:mb-0">
                     <span className="text-orange">✓</span>&nbsp; {line}
@@ -258,9 +260,9 @@ getshiploud.com`}
               <div>
                 <p className="mb-3 text-xs font-black tracking-[0.08em] text-muted">SHIPLOUD IS NOT</p>
                 {[
-                  'A scheduler',
                   'An auto-reply bot (X blocks those. Good.)',
-                  'An algorithm or a growth hack',
+                  'A scheduler that posts for you',
+                  'An algorithm of who to follow',
                   'A fake waitlist screenshot',
                 ].map((line) => (
                   <p key={line} className="mb-[9px] text-[13.5px] font-bold leading-snug text-muted last:mb-0">
@@ -273,8 +275,8 @@ getshiploud.com`}
           <div className="flex flex-col justify-center rounded-[26px] border-[1.5px] border-dashed border-line bg-cream-2 p-[26px]">
             <p className="mb-2.5 font-script text-[26px] font-bold text-orange">the honest bit →</p>
             <p className="text-[16.5px] font-extrabold leading-relaxed text-pretty">
-              We don't fake engagement or auto-post. Growth still comes from you showing up. The win is you actually
-              show up, in a voice people follow.
+              We don’t fake engagement or auto-post. Growth still comes from you showing up. X doesn’t let apps reply
+              for you. We open X with your text ready.
             </p>
           </div>
         </div>
@@ -282,9 +284,9 @@ getshiploud.com`}
 
       <section id="inside" className="mx-auto max-w-[1160px] px-6 py-14">
         <p className="mb-2 font-script text-[26px] font-bold text-orange">see it →</p>
-        <h2 className="mb-2.5 text-[40px] font-black leading-[1.12] tracking-[-0.02em]">Journal. Drafts. Replies.</h2>
+        <h2 className="mb-2.5 text-[40px] font-black leading-[1.12] tracking-[-0.02em]">Radar. Write. Receipts.</h2>
         <p className="mb-[30px] text-[15.5px] font-bold text-muted">
-          The loop in three screens. Short, concrete, ready to approve.
+          The reply habit in three screens. Short, concrete, approve-first.
         </p>
         <div className="grid gap-5 md:grid-cols-3">
           <div>
@@ -292,93 +294,7 @@ getshiploud.com`}
               <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(180deg,#FFFDF7_0%,#F7F0DE_100%)] px-3.5 py-[11px]">
                 <WindowDots />
                 <span className="whitespace-nowrap text-[12.5px] font-extrabold text-muted">
-                  <span className="font-black text-orange">01</span> Ship journal
-                </span>
-              </div>
-              <div className="flex flex-1 flex-col bg-cream p-3">
-                <div className={DARK_PANEL}>
-                  <p className="text-[10px] font-black tracking-[0.09em] text-[rgba(255,214,170,.72)]">TODAY · SHIPLOUD</p>
-                  <p className="text-base font-black text-[#FFFDF8]">What actually shipped</p>
-                  {[
-                    'ShipLoud landing live at getshiploud.com',
-                    '11 followers · $0 MRR · 1 product shipped',
-                    'X login blocked. Decision: dogfood before pitch.',
-                  ].map((line) => (
-                    <div
-                      key={line}
-                      className="rounded-[10px] border border-white/10 bg-white/[0.04] px-[11px] py-[9px] text-[12.5px] font-bold leading-snug"
-                    >
-                      {line}
-                    </div>
-                  ))}
-                  <span className="mt-auto inline-flex items-center justify-center whitespace-nowrap rounded-full bg-orange px-4 py-[9px] text-[12.5px] font-black text-white shadow-[0_3px_0_#C9440A]">
-                    Save today's entry
-                  </span>
-                </div>
-              </div>
-            </div>
-            <p className="mt-3 text-center text-[13.5px] font-extrabold">Log it in two minutes. This is the source of truth.</p>
-          </div>
-
-          <div>
-            <div className="flex h-full flex-col overflow-hidden rounded-[22px] border border-line bg-card shadow-[0_12px_28px_rgba(43,27,77,.1)]">
-              <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(180deg,#FFFDF7_0%,#F7F0DE_100%)] px-3.5 py-[11px]">
-                <WindowDots />
-                <span className="whitespace-nowrap text-[12.5px] font-extrabold text-muted">
-                  <span className="font-black text-orange">02</span> Pick a draft
-                </span>
-              </div>
-              <div className="flex flex-1 flex-col bg-cream p-3">
-                <div className={DARK_PANEL}>
-                  <p className="text-[10px] font-black tracking-[0.09em] text-[rgba(255,214,170,.72)]">
-                    DRAFTS · FROM YOUR JOURNAL
-                  </p>
-                  <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-[11px]">
-                    <div className="mb-[7px] flex justify-between">
-                      <span className="inline-flex rounded-full bg-sticker-yellow px-2 py-0.5 text-[9.5px] font-black tracking-wide text-navy">
-                        FITS ONE POST
-                      </span>
-                      <span className="text-[10.5px] font-extrabold text-[rgba(245,240,255,.5)]">81/280</span>
-                    </div>
-                    <p className="whitespace-pre-line text-[12.5px] font-bold leading-normal">
-                      {`Shipped today.
-ShipLoud landing
-
-Not waiting for perfect.
-getshiploud.com`}
-                    </p>
-                    <div className="mt-2.5 flex gap-[7px]">
-                      <span className="inline-flex whitespace-nowrap rounded-full bg-orange px-[13px] py-[7px] text-[11.5px] font-black text-white shadow-[0_3px_0_#C9440A]">
-                        Post to X
-                      </span>
-                      <span className="inline-flex whitespace-nowrap rounded-full border-[1.5px] border-white/20 px-[13px] py-[7px] text-[11.5px] font-extrabold text-[#FFF8EF]/90">
-                        Copy
-                      </span>
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-[11px] opacity-65">
-                    <p className="whitespace-pre-line text-[12.5px] font-bold leading-normal">
-                      {`11 followers · $0 MRR
-ShipLoud landing
-
-Posting the receipt.`}
-                    </p>
-                  </div>
-                  <p className="mt-auto text-[11px] font-bold text-[rgba(245,240,255,.55)]">
-                    3 options · regen if they're dry · nothing posts itself
-                  </p>
-                </div>
-              </div>
-            </div>
-            <p className="mt-3 text-center text-[13.5px] font-extrabold">Three short options. Pick one. You tap Post.</p>
-          </div>
-
-          <div>
-            <div className="flex h-full flex-col overflow-hidden rounded-[22px] border border-line bg-card shadow-[0_12px_28px_rgba(43,27,77,.1)]">
-              <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(180deg,#FFFDF7_0%,#F7F0DE_100%)] px-3.5 py-[11px]">
-                <WindowDots />
-                <span className="whitespace-nowrap text-[12.5px] font-extrabold text-muted">
-                  <span className="font-black text-orange">03</span> Reply radar
+                  <span className="font-black text-orange">01</span> Reply radar
                 </span>
               </div>
               <div className="flex flex-1 flex-col bg-cream p-3">
@@ -392,10 +308,35 @@ Posting the receipt.`}
                       Short post about shipping ugly MVPs before polishing distribution.
                     </p>
                   </div>
-                  <div className="rounded-[10px] border border-white/[0.06] bg-black/28 px-[11px] py-[9px]">
-                    <p className="mb-1 text-[9.5px] font-extrabold tracking-wide text-[rgba(255,214,170,.7)]">
-                      YOUR REPLY · YOU WRITE IT
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-[11px] opacity-65">
+                    <p className="mb-1 text-[12.5px] font-black text-[#FFB088]">@another_founder</p>
+                    <p className="text-xs font-bold leading-snug text-[#FFF8EF]/78">
+                      Hit $2.4K MRR. Asking what to cut next.
                     </p>
+                  </div>
+                  <p className="mt-auto text-[11px] font-bold text-[rgba(245,240,255,.55)]">
+                    Active first · launches · numbers · blockers · asks
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-3 text-center text-[13.5px] font-extrabold">Public posts from people you added. Active ones first.</p>
+          </div>
+
+          <div>
+            <div className="flex h-full flex-col overflow-hidden rounded-[22px] border border-line bg-card shadow-[0_12px_28px_rgba(43,27,77,.1)]">
+              <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(180deg,#FFFDF7_0%,#F7F0DE_100%)] px-3.5 py-[11px]">
+                <WindowDots />
+                <span className="whitespace-nowrap text-[12.5px] font-extrabold text-muted">
+                  <span className="font-black text-orange">02</span> Write & reply
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col bg-cream p-3">
+                <div className={DARK_PANEL}>
+                  <p className="text-[10px] font-black tracking-[0.09em] text-[rgba(255,214,170,.72)]">
+                    YOUR REPLY · YOU WRITE IT
+                  </p>
+                  <div className="rounded-[10px] border border-white/[0.06] bg-black/28 px-[11px] py-[9px]">
                     <p className="text-xs font-bold leading-snug">
                       Shipping the ugly version today. Landing live, $0. Polish can wait.
                     </p>
@@ -403,20 +344,56 @@ Posting the receipt.`}
                   <span className="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-orange px-4 py-[9px] text-[12.5px] font-black text-white shadow-[0_3px_0_#C9440A]">
                     Reply on X
                   </span>
+                  <span className="inline-flex items-center justify-center whitespace-nowrap rounded-full border-[1.5px] border-white/20 px-4 py-[9px] text-[12.5px] font-extrabold text-[#FFF8EF]/90">
+                    I posted it
+                  </span>
                   <p className="mt-auto text-[11px] font-bold text-[rgba(245,240,255,.55)]">
-                    Opens X with your text ready. You tap Post. Then mark "I posted it."
+                    Opens X with your text ready. You tap Post.
                   </p>
                 </div>
               </div>
             </div>
-            <p className="mt-3 text-center text-[13.5px] font-extrabold">
-              Reply to builders you chose. In your voice, not a bot's.
-            </p>
+            <p className="mt-3 text-center text-[13.5px] font-extrabold">You write it. X posts it. Then mark the receipt.</p>
+          </div>
+
+          <div>
+            <div className="flex h-full flex-col overflow-hidden rounded-[22px] border border-line bg-card shadow-[0_12px_28px_rgba(43,27,77,.1)]">
+              <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(180deg,#FFFDF7_0%,#F7F0DE_100%)] px-3.5 py-[11px]">
+                <WindowDots />
+                <span className="whitespace-nowrap text-[12.5px] font-extrabold text-muted">
+                  <span className="font-black text-orange">03</span> Receipts
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col bg-cream p-3">
+                <div className={DARK_PANEL}>
+                  <p className="text-[10px] font-black tracking-[0.09em] text-[rgba(255,214,170,.72)]">
+                    THIS WEEK · RECEIPTS
+                  </p>
+                  <p className="text-base font-black text-[#FFFDF8]">Replies posted</p>
+                  {[
+                    '12 replies marked · I posted it',
+                    '3 replies today · soft goal hit',
+                    'Follower snapshot · secondary check',
+                  ].map((line) => (
+                    <div
+                      key={line}
+                      className="rounded-[10px] border border-white/10 bg-white/[0.04] px-[11px] py-[9px] text-[12.5px] font-bold leading-snug"
+                    >
+                      {line}
+                    </div>
+                  ))}
+                  <p className="mt-auto text-[11px] font-bold text-[rgba(245,240,255,.55)]">
+                    Prove the habit — not vibes.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="mt-3 text-center text-[13.5px] font-extrabold">Receipts count what you actually did.</p>
           </div>
         </div>
         <p className="mx-auto mt-[26px] max-w-[560px] text-center text-[13px] font-bold text-muted text-pretty">
-          Approve-first, always. Originals post through the official X API when you connect. Replies are yours: ShipLoud
-          opens X with your text ready.
+          Approve-first, always. We don’t auto-post. X won’t let apps reply for you anyway — ShipLoud opens X with your
+          text ready. Journal & own-product drafts stay available if you want to broadcast later.
         </p>
       </section>
 
@@ -429,7 +406,7 @@ Posting the receipt.`}
         <div className="grid gap-4 md:grid-cols-2">
           {[
             {
-              text: 'Shipped ShipLoud. Write what you shipped, pick a draft, post it yourself.\n\nNo auto-post. No fake dashboards.\n\n11 followers · $0 MRR',
+              text: 'Shipped ShipLoud. Know where to reply, write it, post on X yourself.\n\nNo auto-reply. No fake dashboards.\n\n11 followers · $0 MRR',
             },
             {
               text: 'X is telling me I have 1200 post impressions in the past 7 days. Not sure I believe it… but it also corresponds to the same time I launched and started using getshiploud.com… just saying.',
@@ -454,7 +431,7 @@ Posting the receipt.`}
       <section id="pricing" className="mx-auto max-w-[1160px] px-6 pb-20 pt-16 text-center">
         <p className="mb-2 font-script text-[26px] font-bold text-orange">ready when you are →</p>
         <h2 className="mb-[30px] text-[46px] font-black leading-tight tracking-[-0.02em]">
-          Draft. Ship. Grow. <span className="text-orange">Loud.</span>
+          Know. Write. Reply. <span className="text-orange">Loud.</span>
         </h2>
         <div className="card-soft relative mx-auto max-w-[560px] rounded-[28px] px-9 py-[38px]">
           <span className="sticker absolute -top-4 left-[26px] -rotate-[5deg] bg-sticker-mint px-3.5 py-1.5 text-[12.5px]">
@@ -466,7 +443,7 @@ Posting the receipt.`}
           <h3 className="mb-2.5 text-[28px] font-black">Free while in beta.</h3>
           <p className="mb-6 text-[15px] font-bold leading-relaxed text-muted text-pretty">
             Founding members lock <span className="font-black text-navy">$19/mo forever</span> after launch. No annual
-            trap. No growth mastermind. Just the engine.
+            trap. No growth mastermind. Just the reply habit engine.
           </p>
           <div className="mx-auto flex justify-center">
             <WaitlistForm id="pricing-waitlist" source="marketing-pricing" />

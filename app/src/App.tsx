@@ -43,7 +43,7 @@ const HASH_ALIASES: Record<string, Tab> = {
 function parseHash(): Tab {
   const hash = window.location.hash.replace('#', '')
   if (hash in HASH_ALIASES) return HASH_ALIASES[hash]
-  return 'today'
+  return 'radar'
 }
 
 function SmileMark({ size = 21 }: { size?: number }) {
@@ -182,7 +182,7 @@ export default function App() {
   const isAdmin = apiConfigured && isAdminRole(user?.role)
 
   useEffect(() => {
-    if (tab === 'people' && user && !isAdminRole(user.role)) setTab('today')
+    if (tab === 'people' && user && !isAdminRole(user.role)) setTab('radar')
   }, [tab, user])
 
   useEffect(() => {
@@ -399,7 +399,7 @@ export default function App() {
     setMenuOpen(false)
     if (window.confirm('Reset to starter data?')) {
       persist(resetData())
-      setTab('today')
+      setTab('radar')
     }
   }
 
@@ -434,12 +434,14 @@ export default function App() {
   })
   const projectLine = [project?.goal, project?.voice].filter(Boolean).join(' · ') || '$10K MRR and beyond · short lines, numbers, no guru speak'
 
-  const navItems: { id: Tab; label: string; chip?: number }[] = [
-    { id: 'today', label: 'Today', chip: draftsOpen },
+  const primaryNav: { id: Tab; label: string; chip?: number }[] = [
     { id: 'radar', label: 'Reply radar' },
     { id: 'builders', label: 'Builders' },
     { id: 'receipts', label: 'Receipts' },
     ...(isAdmin ? [{ id: 'people' as Tab, label: 'People' }] : []),
+  ]
+  const secondaryNav: { id: Tab; label: string; chip?: number }[] = [
+    { id: 'today', label: 'Journal', chip: draftsOpen },
   ]
 
   const sidebar = (
@@ -459,7 +461,7 @@ export default function App() {
         </div>
       </div>
       <nav className="flex flex-col gap-1">
-        {navItems.map((n) => (
+        {primaryNav.map((n) => (
           <NavBtn
             key={n.id}
             id={n.id}
@@ -496,7 +498,20 @@ export default function App() {
             {xConnection.connected ? `X: @${xConnection.handle || 'x'}` : 'X not connected'}
           </span>
         </div>
-        <NavBtn id="setup" label="Setup" active={tab === 'setup'} onClick={() => setTab('setup')} />
+        <div className="flex flex-col gap-1 border-t border-line pt-2.5">
+          <p className="px-3.5 pb-1 text-[10px] font-black tracking-[0.09em] text-muted">MORE</p>
+          {secondaryNav.map((n) => (
+            <NavBtn
+              key={n.id}
+              id={n.id}
+              label={n.label}
+              active={tab === n.id}
+              chip={n.chip}
+              onClick={() => setTab(n.id)}
+            />
+          ))}
+          <NavBtn id="setup" label="Setup" active={tab === 'setup'} onClick={() => setTab('setup')} />
+        </div>
       </div>
     </aside>
   )
@@ -664,7 +679,7 @@ export default function App() {
             <Setup
               setup={data.setup}
               onSave={saveSetup}
-              onBack={() => setTab('today')}
+              onBack={() => setTab('radar')}
               xConnection={xConnection}
               onSetActiveProject={setActiveProject}
             />
@@ -678,7 +693,7 @@ export default function App() {
         aria-label="Primary"
       >
         <div className={`mx-auto grid max-w-3xl ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'}`}>
-          {([...navItems, { id: 'setup' as Tab, label: 'Setup' }]).map((n) => (
+          {([...primaryNav, ...secondaryNav, { id: 'setup' as Tab, label: 'Setup' }]).map((n) => (
             <button
               key={n.id}
               type="button"
@@ -688,7 +703,7 @@ export default function App() {
               }`}
             >
               <NavIcon id={n.id} />
-              <span className="whitespace-nowrap">{n.label}</span>
+              <span className="whitespace-nowrap">{n.label === 'Journal' ? 'Journal' : n.label}</span>
             </button>
           ))}
         </div>
