@@ -91,8 +91,11 @@ const freshRow = { payload: JSON.stringify([sampleTweet]), fetched_at: new Date(
 const tFast = Date.now()
 const cachedHit = await buildRadar({ DB: memoryDb(freshRow) }, ['marclou'], '', false, { fast: true })
 assert(cachedHit.items.length === 1 && cachedHit.items[0].tweetId === '1', 'fast path returns D1 cache')
-assert(Array.isArray(cachedHit.items[0].suggestedReplies) && cachedHit.items[0].suggestedReplies.length === 3, 'fast path has 3 suggestedReplies')
-assert(cachedHit.items[0].suggestedReply === cachedHit.items[0].suggestedReplies[0], 'suggestedReply is first of 3')
+assert(Array.isArray(cachedHit.items[0].suggestedReplies), 'fast path has suggestedReplies array')
+assert(
+  cachedHit.items[0].suggestedReply === (cachedHit.items[0].suggestedReplies[0] || ''),
+  'suggestedReply is first suggestion or empty',
+)
 assert(cachedHit.cached === true, 'fast path cached true')
 assert(cachedHit.pendingHandles.length === 0, 'fresh cache has no pending')
 assert(Date.now() - tFast < 250, 'D1 cache hit is instant')
@@ -128,7 +131,7 @@ assert(empty.cached === false, 'buildRadar empty cached false')
 
 const t0 = Date.now()
 const budgeted = await suggestRepliesWithBudget(null, [{ text: 'Just shipped an MVP' }], 'direct', 50)
-assert(budgeted.length === 1 && budgeted[0].length > 0, 'budget path returns template without AI')
+assert(budgeted.length === 1, 'budget path returns one slot without AI')
 assert(Date.now() - t0 < 200, 'template replies are instant')
 
 assert(capHandles(['@MarcLou', 'levelsio', 'bad handle', '@MarcLou']).join(',') === 'marclou,levelsio', 'capHandles normalizes + dedupes')
@@ -218,8 +221,18 @@ assert(templateReplies(2).every((t) => t === TEMPLATE_REPLY), 'numeric templateR
 assert(TEMPLATE_REPLY.length <= 180, 'template ≤180')
 assert(/\?/.test(TEMPLATE_REPLY), 'template asks a question')
 
-const { RADAR_REPLY_SYSTEM, REPLY_TONE_VERSION, looksDunky, templateReplyFor, REPLY_MAX_CHARS } = mod
-assert(REPLY_TONE_VERSION >= 4, 'tone version bumped')
+const {
+  RADAR_REPLY_SYSTEM,
+  REPLY_TONE_VERSION,
+  looksDunky,
+  templateReplyFor,
+  REPLY_MAX_CHARS,
+  isBannedFiller,
+  isQualityReply,
+  replyGroundedInTweet,
+  generateMoreReplies,
+} = mod
+assert(REPLY_TONE_VERSION >= 5, 'tone version bumped for quality bar')
 assert(REPLY_MAX_CHARS === 180, 'reply cap 180')
 assert(/\bDO:/.test(RADAR_REPLY_SYSTEM), 'system prompt has DO')
 assert(/DON'T:/.test(RADAR_REPLY_SYSTEM), "system prompt has DON'T")
@@ -228,6 +241,8 @@ assert(/that.?s not cool/i.test(RADAR_REPLY_SYSTEM), "bans that's not cool")
 assert(/I have better things to do/.test(RADAR_REPLY_SYSTEM), 'bans better things')
 assert(/favorite builders/.test(RADAR_REPLY_SYSTEM), 'names favorite builders')
 assert(/fire/.test(RADAR_REPLY_SYSTEM), 'bans fire fanboy')
+assert(/same muscle over here/i.test(RADAR_REPLY_SYSTEM), 'bans same muscle filler')
+assert(/melatonin/i.test(RADAR_REPLY_SYSTEM), 'prompt bans off-topic melatonin-style fails')
 
 assert(looksDunky("That's not cool."), "flags that's not cool")
 assert(looksDunky("Don't worry, that's basic."), "flags don't worry / basic")
@@ -239,63 +254,80 @@ const tweetA = 'Do the opposite of what AI recommends.'
 const tweetB = 'Just shipped a new Micro SaaS. Ugly on purpose.'
 const replyA = templateReplyFor(tweetA)
 const replyB = templateReplyFor(tweetB)
-const dunkBits = /dunk|basic|not cool|don'?t worry|🔥|great post|actually |cope|one-up/i
+const dunkBits = /dunk|basic|not cool|don'?t worry|🔥|great post|cope|one-up/i
+assert(replyA.length > 0 && replyB.length > 0, 'claim-specific tweets get a reply')
 assert(!dunkBits.test(replyA), 'AI-take tweet reply is not dunk-y')
 assert(!dunkBits.test(replyB), 'ship tweet reply is not dunk-y')
-assert(/\?/.test(replyA) || /same muscle/i.test(replyA), 'AI-take reply is question or same-muscle')
+assert(/\?/.test(replyA), 'AI-take reply asks a question')
 assert(/\?/.test(replyB), 'ship reply asks a question')
+assert(/AI/i.test(replyA), 'AI-take reply names AI')
+assert(/Micro SaaS/i.test(replyB), 'ship reply names Micro SaaS')
 assert(replyA.length <= 180 && replyB.length <= 180, 'sample replies ≤180')
 console.log('SAMPLE_REPLY_1', JSON.stringify({ tweet: tweetA, reply: replyA }))
 console.log('SAMPLE_REPLY_2', JSON.stringify({ tweet: tweetB, reply: replyB }))
 
-const specific = replyA
-assert(specific.includes('same muscle') || /\?/.test(specific), 'specific template is curious add-on')
-assert(specific.length <= 180, 'specific template ≤180')
-
-assert(SUGGESTED_REPLY_COUNT === 3, 'exactly 3 suggestions')
-for (const tweet of [tweetA, tweetB, 'Anyone else stuck on pricing?', 'Shipped v1 today', 'Random builder note about distribution']) {
+assert(SUGGESTED_REPLY_COUNT === 3, 'at most 3 suggestions')
+const marcEarly = '#2 advice to grow an audience in 2026: Do the opposite of what AI recommends.'
+for (const tweet of [tweetA, tweetB, marcEarly, 'Just hit $1k MRR.']) {
   const three = templateRepliesFor(tweet)
-  assert(three.length === 3, `3 replies for: ${tweet.slice(0, 40)}`)
-  assert(new Set(three).size === 3, `3 distinct replies for: ${tweet.slice(0, 40)}`)
+  assert(three.length >= 1 && three.length <= 3, `1–3 replies for: ${tweet.slice(0, 40)}`)
+  assert(new Set(three).size === three.length, `distinct replies for: ${tweet.slice(0, 40)}`)
   assert(three.every((t) => t.length > 0 && t.length <= 180), `replies ≤180 for: ${tweet.slice(0, 40)}`)
-  assert(three.every((t) => /\?/.test(t) || /same muscle/i.test(t)), `curious tone for: ${tweet.slice(0, 40)}`)
+  assert(three.every((t) => /\?/.test(t)), `curious tone for: ${tweet.slice(0, 40)}`)
   assert(three.every((t) => !dunkBits.test(t) && !looksDunky(t)), `not dunky for: ${tweet.slice(0, 40)}`)
-  assert(templateReplyFor(tweet) === three[0], 'templateReplyFor is first of 3')
+  assert(three.every((t) => isQualityReply(t, tweet)), `grounded quality for: ${tweet.slice(0, 40)}`)
+  assert(templateReplyFor(tweet) === three[0], 'templateReplyFor is first of list')
 }
 
-const mixed = repliesForTweet(tweetB, 'Congrats on the ship — what did you cut last so it could go out?')
-assert(mixed.length === 3, 'repliesForTweet still 3 with AI first')
-assert(mixed[0].includes('Congrats on the ship'), 'AI line is first when valid')
-assert(mixed[0] === 'Congrats on the ship. What did you cut last so it could go out?', 'strips clause dash in AI line')
-assert(new Set(mixed).size === 3, 'AI + templates stay distinct')
+// Vague / no-concrete-noun tweets: prefer empty over canned pad
+const vague = templateRepliesFor('gm')
+assert(vague.length === 0, 'gm tweet returns no pad replies')
+const weak = templateRepliesFor('Random builder note about distribution')
+assert(weak.every((t) => isQualityReply(t, 'Random builder note about distribution')), 'weak tweet replies stay grounded or empty')
+assert(weak.every((t) => !isBannedFiller(t)), 'weak tweet has no banned filler')
+
+const mixed = repliesForTweet(tweetB, 'Congrats on the Micro SaaS — what did you cut last so it could go out?')
+assert(mixed.length >= 1 && mixed.length <= 3, 'repliesForTweet stays ≤3 with AI first')
+assert(mixed[0].includes('Congrats on the Micro SaaS'), 'AI line is first when grounded')
+assert(mixed[0] === 'Congrats on the Micro SaaS. What did you cut last so it could go out?', 'strips clause dash in AI line')
+assert(new Set(mixed).size === mixed.length, 'AI + templates stay distinct')
 assert(mixed.every((t) => t.length <= 180), 'mixed replies ≤180')
 assert(mixed.every((t) => !/[—–]/.test(t) && !/\s-\s/.test(t)), 'mixed replies have no clause dashes')
 
 const dunked = repliesForTweet(tweetB, "That's not cool. fire 🔥")
-assert(dunked[0] === templateReplyFor(tweetB), 'dunky AI falls back to templates')
-assert(dunked.length === 3, 'fallback still 3')
+assert(dunked[0] === templateReplyFor(tweetB) || dunked.length === 0, 'dunky AI falls back to templates')
+assert(dunked.length <= 3, 'fallback stays ≤3')
 
-const leftover = repliesForTweet(tweetB, `I've used AI slops for those edge cases",`)
-assert(leftover[0] === `I've used AI slops for those edge cases`, 'clipReply strips leftover quote-comma')
+const leftover = repliesForTweet(tweetB, `I've been watching Micro SaaS edge cases",`)
+assert(leftover[0] === `I've been watching Micro SaaS edge cases`, 'clipReply strips leftover quote-comma')
 assert(!/[,"']$/.test(leftover[0]), 'tidied reply has no trailing quote/comma')
-const wrappedJson = repliesForTweet(tweetB, `"Congrats on the ship — what did you cut last so it could go out?",`)
-assert(wrappedJson[0] === 'Congrats on the ship. What did you cut last so it could go out?', 'unwraps JSON string, strips dash')
-const keepQ = 'Congrats on the ship. What are you watching first to see if it sticks?'
+const offTopic = repliesForTweet(tweetB, 'Been meaning to try melatonin for focus too.')
+assert(!/melatonin/i.test(offTopic.join(' ')), 'rejects melatonin reply on shipping post')
+const wrappedJson = repliesForTweet(tweetB, `"Congrats on Micro SaaS — what did you cut last so it could go out?",`)
+assert(wrappedJson[0] === 'Congrats on Micro SaaS. What did you cut last so it could go out?', 'unwraps JSON string, strips dash')
+const keepQ = 'Congrats on Micro SaaS. What are you watching first to see if it sticks?'
 assert(repliesForTweet(tweetB, keepQ)[0] === keepQ, 'clipReply keeps trailing ?')
-assert(repliesForTweet(tweetB, 'Nice get-it-out. What was the last thing you cut so it could ship.')[0].endsWith('.'), 'clipReply keeps trailing .')
+assert(repliesForTweet(tweetB, 'Nice get-it-out on Micro SaaS. What was the last thing you cut so it could ship.')[0].endsWith('.'), 'clipReply keeps trailing .')
+
+assert(!replyGroundedInTweet('Been meaning to try melatonin for focus too.', 'Shipped v1 of our inventory tool today.'), 'melatonin not grounded in inventory ship')
+assert(replyGroundedInTweet('Nice. What was the ugliest inventory edge case you still left in v1?', 'Shipped v1 of our inventory tool today.'), 'inventory reply is grounded')
+assert(!isQualityReply('Curious which line you want people to sit with?', tweetA), 'generic pad fails quality')
+assert(isBannedFiller('Same muscle over here. What did you try first?'), 'bans same muscle filler')
+assert(isBannedFiller('This landed. What’s next?'), 'bans this landed')
 
 const marc = '#2 advice to grow an audience in 2026: Do the opposite of what AI recommends.'
 assert(/opposite of what AI recommends/i.test(tweetHook(marc)), 'hook is the claim, not the list opener')
 assert(!/#2 advice/i.test(tweetHook(marc)), 'hook rejects #2 advice opener')
 assert(/opposite of what AI recommends/i.test(safeHook(marc)), 'safeHook keeps claim noun phrase')
 const marcReplies = templateRepliesFor(marc)
-assert(marcReplies.length === 3, 'marc tweet has 3 replies')
-assert(new Set(marcReplies).size === 3, 'marc replies distinct')
+assert(marcReplies.length >= 1 && marcReplies.length <= 3, 'marc tweet has up to 3 replies')
+assert(new Set(marcReplies).size === marcReplies.length, 'marc replies distinct')
 assert(marcReplies.every((t) => !/#2 advice to grow/i.test(t)), 'does not quote list opener')
 assert(marcReplies.every((t) => !/how are you testing that/i.test(t)), 'no generic testing-that')
 assert(marcReplies.every((t) => !/bit stuck/i.test(t)), 'no hook-quote bit-stuck templates')
 assert(marcReplies.every((t) => /\?/.test(t)), 'marc replies stay curious')
-assert(marcReplies.every((t) => /ignor|instead|opposite|advice|default|generic|skip/i.test(t)), 'marc replies engage the claim')
+assert(marcReplies.every((t) => /ignor|instead|opposite|advice|default|generic|skip|AI/i.test(t)), 'marc replies engage the claim')
+assert(marcReplies.every((t) => isQualityReply(t, marc)), 'marc replies pass quality gate')
 assert(/#2 advice to grow an audience/.test(RADAR_REPLY_SYSTEM), 'marc example in prompt')
 assert(/last AI suggestion you ignored/.test(RADAR_REPLY_SYSTEM), 'marc DO example in prompt')
 assert(/first 4 words/.test(RADAR_REPLY_SYSTEM), 'prompt bans first-4-words replies')
@@ -311,11 +343,12 @@ console.log('TONY_REPLIES', JSON.stringify(tonyReplies))
 assert(tonyReplies.length === 3, 'Tony tweet has 3 replies')
 assert(new Set(tonyReplies).size === 3, 'Tony replies distinct')
 assert(tonyReplies[0] === 'Which Google screen were you looking at when that hit?', 'Tony 1 names Google screen')
-assert(tonyReplies[1] === 'Same. I keep opening Material and wondering who approved the empty states.', 'Tony 2 names Material')
+assert(tonyReplies[1] === "Same. I keep opening Google Design and wondering who approved the empty states.", 'Tony 2 names Google Design')
 assert(tonyReplies[2] === 'Curious which AI tool you think is actually beating their design system right now.', 'Tony 3 names design system')
 assert(tonyReplies.every((t) => !/\bthis landed\b/i.test(t)), 'Tony replies have no this landed')
 assert(tonyReplies.every((t) => !hasClauseDash(t)), 'Tony replies have no clause dashes')
-assert(tonyReplies.every((t) => !/what did you try first|next small experiment|how is this going/i.test(t)), 'Tony replies are not generic filler')
+assert(tonyReplies.every((t) => !/what did you try first|next small experiment|how is this going|same muscle over here/i.test(t)), 'Tony replies are not generic filler')
+assert(tonyReplies.every((t) => isQualityReply(t, tony)), 'Tony replies pass quality gate')
 assert(roastRepliesFor(tony).length === 3, 'roastRepliesFor returns 3 for Tony')
 
 const landed = repliesForTweet(tony, 'This landed. Which Google screen were you looking at when that hit?')
@@ -325,12 +358,21 @@ assert(stripClauseDashes('Same muscle over here — what did you try first?') ==
 assert(stripClauseDashes('keep the set-up intact') === 'keep the set-up intact', 'word hyphen stays')
 assert(hasClauseDash('foo — bar') && !hasClauseDash('set-up'), 'clause dash vs word hyphen')
 
-for (const tweet of [tony, tweetA, tweetB, marc, 'Anyone else stuck on pricing?', 'Shipped v1 today', 'Random builder note about distribution']) {
+for (const tweet of [tony, tweetA, tweetB, marc, 'Just hit $1k MRR.', 'Shipped v1 of our inventory tool today']) {
   const three = templateRepliesFor(tweet)
   assert(three.every((t) => !/\bthis landed\b/i.test(t)), `no this landed for: ${tweet.slice(0, 40)}`)
   assert(three.every((t) => !hasClauseDash(t)), `no clause dashes for: ${tweet.slice(0, 40)}`)
-  assert(three.every((t) => !/what did you try first|next small experiment|how is this going for you/i.test(t)), `no banned filler for: ${tweet.slice(0, 40)}`)
+  assert(three.every((t) => !/what did you try first|next small experiment|how is this going for you|same muscle over here/i.test(t)), `no banned filler for: ${tweet.slice(0, 40)}`)
+  assert(three.every((t) => isQualityReply(t, tweet)), `quality gate for: ${tweet.slice(0, 40)}`)
 }
+
+const moreEmpty = await generateMoreReplies(null, { text: 'gm' })
+assert(moreEmpty.replies.length === 0, 'Need ideas? returns empty for gm')
+const moreMarc = await generateMoreReplies(null, { text: marc })
+assert(moreMarc.replies.length >= 1, 'Need ideas? returns claim-specific for Marc')
+assert(moreMarc.replies.every((t) => isQualityReply(t, marc)), 'Need ideas? Marc replies are quality')
+assert(moreMarc.source === 'template', 'Need ideas? without AI uses template source')
+
 
 
 if (fixture) {

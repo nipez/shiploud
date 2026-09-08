@@ -417,14 +417,13 @@ function isStaleHookQuote(t: string): boolean {
   )
 }
 
-function isBannedFiller(text: string, tweet?: string): boolean {
+function isBannedFiller(text: string, _tweet?: string): boolean {
   if (/\bthis landed\b/i.test(text)) return true
   if (/[—–]/.test(text) || /\s-\s/.test(text)) return true
-  const shipOrExperiment = tweet
-    ? /\b(shipped|shipping|launched|launch|went live|mvp|built|building|experiment|a\/b|hypothesis)\b/i.test(tweet)
-    : false
-  if (shipOrExperiment) return false
-  return /what did you try first|next small experiment|how is this going for you/i.test(text)
+  if (/same muscle over here|next small experiment|curious how this is going|how is this going for you|what did you try first|how are you testing that/i.test(text)) {
+    return true
+  }
+  return false
 }
 
 /** Up to 3 distinct replies. Drops "this landed" and clause-dash junk. No generic pad. */
